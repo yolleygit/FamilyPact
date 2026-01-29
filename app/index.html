@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FamilyPact - 极简云同步版</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Noto+Sans+SC:wght@500;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="app" class="iphone-app" style="display: none;">
+        <!-- iOS 灵动岛风格通知 -->
+        <div id="ios-notification" class="ios-banner">
+            <div class="banner-content">
+                <span class="banner-icon">🔔</span>
+                <div class="banner-text">
+                    <strong id="banner-title">欢迎回来</strong>
+                    <p id="banner-desc">正在准备您的数据...</p>
+                </div>
+            </div>
+        </div>
+
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <h1 id="user-display-name">FamilyPact</h1>
+                    <span id="current-date"></span>
+                </div>
+                <div class="mode-pill">
+                    <span id="mode-label">有课日</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="has-class-mode" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </header>
+
+        <!-- 顶部选择器 (仅父母可见) -->
+        <div id="child-carousel" class="child-selector" style="display: none;">
+            <!-- 动态注入孩子头像 -->
+        </div>
+
+        <!-- 悬浮分数仪表盘 -->
+        <div class="floating-dashboard">
+            <div class="score-main">
+                <div>
+                    <span id="total-score">0</span>
+                    <span class="target-sep">/</span>
+                    <span id="target-score">140</span>
+                    <span class="unit">PTS</span>
+                </div>
+                <div id="beijing-time" class="dashboard-time">00:00:00</div>
+            </div>
+            <div class="status-summary">
+                <div id="unlock-badge" class="badge locked">🔒 未解锁</div>
+                <div id="time-text" class="time-hint">0 min</div>
+            </div>
+            <div class="mini-progress">
+                <div id="score-progress" class="fill"></div>
+            </div>
+        </div>
+
+        <!-- 内容区域 -->
+        <main class="tab-content">
+            <!-- 周视图组件 (固定在状态页顶部) -->
+            <div id="week-strip" class="week-strip" style="display: none;">
+                <!-- 动态注入周日期胶囊 -->
+            </div>
+
+            <div id="active-tab-view" class="view-container">
+                <!-- 内容由 JS 动态注入 -->
+            </div>
+        </main>
+
+        <!-- 底部导航栏 -->
+        <nav class="tab-bar">
+            <button class="tab-btn active" data-tab="A">
+                <span class="icon">🏠</span>
+                <span class="label">生活</span>
+            </button>
+            <button class="tab-btn" data-tab="B">
+                <span class="icon">🧹</span>
+                <span class="label">家务</span>
+            </button>
+            <button class="tab-btn" data-tab="C">
+                <span class="icon">📚</span>
+                <span class="label">学习</span>
+            </button>
+            <button class="tab-btn" data-tab="D">
+                <span class="icon">👤</span>
+                <span class="label">我的</span>
+            </button>
+            <button class="tab-btn" data-tab="E">
+                <span class="icon">📊</span>
+                <span class="label">趋势</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- 登录/身份选择遮罩层 -->
+    <div id="auth-overlay" class="auth-overlay">
+        <div class="auth-card">
+            <h2 id="auth-title">家庭登录</h2>
+            <div id="login-form">
+                <input type="text" id="family-code-input" placeholder="输入 6 位家庭码" maxlength="10">
+                <button id="login-btn">进入家庭</button>
+            </div>
+            <div id="identity-selector" style="display: none;">
+                <p>请选择您的身份</p>
+                <div id="user-list" class="user-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义输入模态框 (iOS 风格) -->
+    <div id="edit-modal" class="ios-modal" style="display: none;">
+        <div class="modal-blur"></div>
+        <div class="modal-card keypad-modal">
+            <h3>修改数值</h3>
+            <p id="modal-desc">请输入新的数值</p>
+
+            <div id="modal-input-display" class="modal-display">0</div>
+
+            <div class="pin-keypad mini">
+                <button class="key">1</button><button class="key">2</button><button class="key">3</button>
+                <button class="key">4</button><button class="key">5</button><button class="key">6</button>
+                <button class="key">7</button><button class="key">8</button><button class="key">9</button>
+                <button class="key empty"></button><button class="key">0</button><button class="key delete">⌫</button>
+            </div>
+
+            <div class="modal-btns">
+                <button id="modal-cancel">取消</button>
+                <button id="modal-confirm">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIN 码输入蒙层 (iOS 风格) -->
+    <div id="pin-overlay" class="auth-overlay" style="display: none;">
+        <div class="pin-container">
+            <div class="pin-user-info">
+                <span id="pin-user-avatar" style="font-size: 40px;"></span>
+                <h2 id="pin-user-name"></h2>
+                <p>请输入 4 位 PIN 码</p>
+            </div>
+
+            <div class="pin-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+
+            <div class="pin-keypad">
+                <button class="key">1</button><button class="key">2</button><button class="key">3</button>
+                <button class="key">4</button><button class="key">5</button><button class="key">6</button>
+                <button class="key">7</button><button class="key">8</button><button class="key">9</button>
+                <button class="key empty"></button><button class="key">0</button><button class="key delete">⌫</button>
+            </div>
+
+            <button id="pin-cancel" class="pin-cancel-btn">返回</button>
+        </div>
+    </div>
+
+    <!-- 自定义 iOS 对话框 (替换 alert/confirm) -->
+    <div id="dialog-modal" class="ios-modal" style="display: none;">
+        <div class="modal-blur"></div>
+        <div class="modal-card">
+            <h3 id="dialog-title">提示</h3>
+            <p id="dialog-msg"></p>
+            <div class="modal-btns stack">
+                <button id="dialog-confirm">确定</button>
+                <button id="dialog-cancel" style="display: none;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 嘉奖寄语输入模态框 -->
+    <div id="reward-modal" class="ios-modal" style="display: none;">
+        <div class="modal-blur"></div>
+        <div class="modal-card">
+            <h3>授予嘉奖星星 ✨</h3>
+            <p>写一句鼓励孩子的话吧：</p>
+            <textarea id="reward-input" placeholder="例如：今天奥数做得非常认真！" class="ios-textarea"></textarea>
+            <div class="modal-btns">
+                <button id="reward-cancel">取消</button>
+                <button id="reward-confirm" style="font-weight: 700; color: var(--ios-blue);">授予星星</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 庆祝奖励卡片 (3D 效果) -->
+    <div id="celebration-overlay" class="celebration-overlay" style="display: none;">
+        <div class="celebration-card animate-pop">
+            <div class="star-burst-icon">✨</div>
+            <h2>获得特别嘉奖！</h2>
+            <p id="celebration-msg"></p>
+            <button id="celebration-close">太棒了！</button>
+        </div>
+    </div>
+
+    <!-- 粒子特效画布 -->
+    <canvas id="stars-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:9999;"></canvas>
+
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
