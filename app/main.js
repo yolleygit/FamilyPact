@@ -853,10 +853,10 @@ function updateUI() {
         timeText.innerText = !requiredDone ? '必做项未完' : '积分不足';
     }
 
-    renderSlotsGrid(totalSlots, nextThreshold - total);
+    renderSlotsGrid(totalSlots, nextThreshold - total, requiredDone);
 }
 
-function renderSlotsGrid(totalSlots, pointsToNext) {
+function renderSlotsGrid(totalSlots, pointsToNext, requiredDone) {
     const dashboard = document.querySelector('.floating-dashboard');
     // 检查或创建容器
     let container = document.getElementById('slots-pnl');
@@ -906,7 +906,12 @@ function renderSlotsGrid(totalSlots, pointsToNext) {
 
     html += `</div>`;
     if (totalSlots > 0 && pointsToNext > 0) {
-        html += `<div class="next-unlock-hint">🚀 再得 ${pointsToNext} 积分解锁下一个 30min</div>`;
+        // 优先检查必做项状态，避免误导用户
+        if (requiredDone === false) {
+            html += `<div class="next-unlock-hint">⚠️ 请先完成必做项才能解锁更多时间</div>`;
+        } else {
+            html += `<div class="next-unlock-hint">🚀 再得 ${pointsToNext} 积分解锁下一个 30min</div>`;
+        }
     }
     container.innerHTML = html;
 
