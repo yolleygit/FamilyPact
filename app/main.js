@@ -886,7 +886,8 @@ function renderSlotsGrid(totalSlots, pointsToNext, requiredDone, currentTotal, b
     }
 
     const availableCount = totalSlots - state.usedSlots;
-    const maxDisplay = (availableCount >= 4) ? 8 : 4; // 初始展示 4 个，满 4 个可用时展示全部 (8个)
+    // 🔍 布局修复：只要总获得的券数超过 4 个（第一排容量），或者可用券数即将满一排，就展示两排 (8个)
+    const maxDisplay = (totalSlots > 4 || availableCount >= 4) ? 8 : 4;
     let html = `
         <div class="slots-header">
             <span class="slots-title">娱乐时间券 (30min/张)</span>
