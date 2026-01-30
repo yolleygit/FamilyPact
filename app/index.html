@@ -31,12 +31,9 @@
                     <h1 id="user-display-name">FamilyPact</h1>
                     <span id="current-date"></span>
                 </div>
-                <div class="mode-pill">
-                    <span id="mode-label">有课日</span>
-                    <label class="toggle">
-                        <input type="checkbox" id="has-class-mode" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
+                <div class="time-card" id="calendar-card">
+                    <div class="solar-row" id="solar-text">----年--月--日</div>
+                    <div class="lunar-row" id="lunar-text">农历--- · 星期-</div>
                 </div>
             </div>
         </header>
@@ -207,6 +204,9 @@
 
     <!-- 粒子特效画布 -->
     <canvas id="stars-canvas" style="position:fixed; inset:0; pointer-events:none; z-index:9999;"></canvas>
+
+    <!-- 极简 Toast 提示 -->
+    <div id="toast" class="toast"></div>
 
     <script type="module" src="main.js"></script>
 </body>

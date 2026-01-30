@@ -65,21 +65,6 @@ function loadLocalAuth() {
 function setupGlobalEvents() {
     document.getElementById('login-btn').onclick = handleLogin;
 
-    // Mode toggle
-    document.getElementById('has-class-mode').onchange = (e) => {
-        // 权限二次检查 (虽然 UI 已经 disabled)
-        if (state.currentUser.role !== 'parent') {
-            e.target.checked = state.hasClass; // 恢复原状
-            return showDialog("权限受限", "只有爸爸妈妈可以修改有课日状态哦。");
-        }
-        state.hasClass = e.target.checked;
-        // 关键修复：同步更新补习项的完成状态，确保分数同步加减
-        state.answers[11] = state.hasClass;
-        updateUI();
-        syncData();
-        renderActiveTab(); // 刷新列表以同步界面
-    };
-
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.onclick = () => {
@@ -186,10 +171,14 @@ async function enterApp() {
         state.selectedChildId = state.currentUser.id;
     }
 
-    // 1. 设置“有课日”开关权限：只有家长可以操作
-    document.getElementById('has-class-mode').disabled = (state.currentUser.role !== 'parent');
+    // 1. 设置“有课日”开关权限：只有家长可以操作 (如果开关已在 DOM 中)
+    const classToggleInitial = document.getElementById('has-class-mode');
+    if (classToggleInitial) {
+        classToggleInitial.disabled = (state.currentUser.role !== 'parent');
+    }
 
     await loadDayData();
+    updateBillboard(); // 更新右上角时间看板
     renderActiveTab();
 
     // 触发登录汇报
@@ -370,6 +359,13 @@ function renderStatusTab(container) {
             <button class="ios-setting-item" id="family-code-btn">
                 <span>家庭码: ${localStorage.getItem('family_pact_code') || '---'}</span>
             </button>
+            <div class="ios-setting-item">
+                <span>今天有课 (有课日)</span>
+                <label class="toggle">
+                    <input type="checkbox" id="has-class-mode" ${state.hasClass ? 'checked' : ''} ${state.currentUser.role !== 'parent' ? 'disabled' : ''}>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
         </div>
 
         <div class="ios-settings-list" id="admin-tools" style="${state.currentUser.role === 'parent' ? '' : 'display:none'}">
@@ -388,6 +384,22 @@ function renderStatusTab(container) {
         </div>
     `;
     items.forEach(item => bindItemEvents(item));
+
+    // 绑定有课日开关逻辑
+    const classToggle = document.getElementById('has-class-mode');
+    if (classToggle) {
+        classToggle.onchange = (e) => {
+            if (state.currentUser.role !== 'parent') {
+                e.target.checked = state.hasClass;
+                return showDialog("权限受限", "只有爸爸妈妈可以修改有课日状态哦。");
+            }
+            state.hasClass = e.target.checked;
+            state.answers[11] = state.hasClass;
+            updateUI();
+            syncData();
+            showToast(state.hasClass ? "已切换至：有课模式 📚" : "已切换至：无课模式 🏖️");
+        };
+    }
 
     if (state.currentUser.role === 'parent') {
         document.getElementById('bonus-star-btn').onclick = () => {
@@ -855,7 +867,8 @@ function renderSlotsGrid(totalSlots, pointsToNext) {
         dashboard.appendChild(container);
     }
 
-    const maxDisplay = 8; // 预览 8 个块
+    const availableCount = totalSlots - state.usedSlots;
+    const maxDisplay = (availableCount >= 4) ? 8 : 4; // 初始展示 4 个，满 4 个可用时展示全部 (8个)
     let html = `
         <div class="slots-header">
             <span class="slots-title">娱乐时间券 (30min/张)</span>
@@ -929,9 +942,54 @@ function renderSlotsGrid(totalSlots, pointsToNext) {
 }
 
 function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.innerText = msg; t.className = 'toast show';
-    setTimeout(() => t.className = 'toast', 2000);
+    const t = document.getElementById('toast') || document.getElementById('ios-notification');
+    if (!t) return;
+
+    if (t.id === 'ios-notification') {
+        const title = document.getElementById('banner-title');
+        const desc = document.getElementById('banner-desc');
+        if (title) title.innerText = "提示";
+        if (desc) desc.innerText = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    } else {
+        t.innerText = msg; t.className = 'toast show';
+        setTimeout(() => t.className = 'toast', 3000);
+    }
+}
+
+function updateBillboard() {
+    try {
+        const d = new Date();
+        // 1. 公历年月日：2026年1月30日
+        const solarStr = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+
+        // 2. 农历日期 · 星期：腊月十二 · 星期五
+        const dow = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()];
+
+        const lunarFormatter = new Intl.DateTimeFormat('zh-CN-u-ca-chinese', {
+            month: 'long',
+            day: 'numeric'
+        });
+        const lunarParts = lunarFormatter.formatToParts(d);
+        const lMonth = lunarParts.find(p => p.type === 'month').value;
+        const lDayNum = parseInt(lunarParts.find(p => p.type === 'day').value);
+
+        // 简易农历日期转换
+        const days = ["", "初一", "初二", "初三", "初四", "初五", "初六", "初七", "初八", "初九", "初十",
+            "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十",
+            "廿一", "廿二", "廿三", "廿四", "廿五", "廿六", "廿七", "廿八", "廿九", "三十"];
+        const lDay = days[lDayNum] || lDayNum;
+        const lunarStr = `${lMonth}${lDay}`;
+
+        const solarEl = document.getElementById('solar-text');
+        const lunarEl = document.getElementById('lunar-text');
+
+        if (solarEl) solarEl.innerText = solarStr;
+        if (lunarEl) lunarEl.innerText = `${lunarStr} · ${dow}`;
+    } catch (e) {
+        console.error("Billboard update failed:", e);
+    }
 }
 
 init();
@@ -1083,7 +1141,7 @@ async function showLoginReport() {
                 banner.classList.add('show');
             }, 500);
 
-            setTimeout(() => banner.classList.remove('show'), 8000);
+            setTimeout(() => banner.classList.remove('show'), 3000);
         }
     } catch (e) {
         console.error("Login report failed:", e);
