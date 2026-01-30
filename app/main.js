@@ -853,10 +853,28 @@ function updateUI() {
         timeText.innerText = !requiredDone ? '必做项未完' : '积分不足';
     }
 
-    renderSlotsGrid(totalSlots, nextThreshold - total, requiredDone);
+    // 传递完整参数给时间券渲染函数
+    // - totalSlots: 已获得的时间券数量
+    // - pointsToNext: 距离下一个时间券还差多少分
+    // - requiredDone: 必做项是否全部完成
+    // - total: 当前总分数 (用于判断分数是否已达到基础要求)
+    // - basePoints: 基础分数要求 (140分)
+    renderSlotsGrid(totalSlots, nextThreshold - total, requiredDone, total, basePoints);
 }
 
-function renderSlotsGrid(totalSlots, pointsToNext, requiredDone) {
+/**
+ * 渲染娱乐时间券网格
+ * @param {number} totalSlots - 已获得的时间券总数 (包括已使用的)
+ * @param {number} pointsToNext - 距离下一个时间券的积分差
+ * @param {boolean} requiredDone - 必做项是否全部完成
+ * @param {number} currentTotal - 当前总积分
+ * @param {number} basePoints - 基础分数要求 (默认140)
+ * 
+ * Bug修复说明:
+ * - 之前只传递 pointsToNext,当分数超过基础要求但必做项未完成时,会错误显示"还差 xx 分"
+ * - 现在通过传递 currentTotal 和 basePoints,能准确区分"分数不够"和"必做项未完成"两种情况
+ */
+function renderSlotsGrid(totalSlots, pointsToNext, requiredDone, currentTotal, basePoints) {
     const dashboard = document.querySelector('.floating-dashboard');
     // 检查或创建容器
     let container = document.getElementById('slots-pnl');
@@ -893,7 +911,23 @@ function renderSlotsGrid(totalSlots, pointsToNext, requiredDone) {
                 icon = '🎫';
             }
         } else if (i === totalSlots + 1) {
-            statusText = `还差 ${Math.abs(pointsToNext)} 分`;
+            // 🔍 关键 Bug 修复点: 区分两种"未解锁"情况
+            // 
+            // 场景1: 分数已达标 (如 155分 >= 140), 但必做项未完成
+            //   → 显示: "完成必做项" (提示用户真正的阻塞原因)
+            // 
+            // 场景2: 分数未达标 (如 120分 < 140)
+            //   → 显示: "还差 20 分" (提示用户需要继续积分)
+            // 
+            // 之前的Bug: 只用 pointsToNext 判断,当场景1时会显示"还差-15分"(取绝对值后变成"还差15分")
+            // 修复后: 通过 currentTotal >= basePoints 准确区分两种场景
+            if (currentTotal >= basePoints && requiredDone === false) {
+                // 分数已达标,只是必做项未完成
+                statusText = '完成必做项';
+            } else {
+                // 分数真的不够
+                statusText = `还差 ${Math.abs(pointsToNext)} 分`;
+            }
         }
 
         html += `
