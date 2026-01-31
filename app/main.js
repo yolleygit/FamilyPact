@@ -266,6 +266,23 @@ async function syncData() {
 }
 
 // --- Rendering ---
+// --- UI Helpers ---
+function extractEmojiAndText(str) {
+    const emojiMatch = str.match(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/);
+    if (!emojiMatch) return { emoji: '✨', text: str };
+    // 移除文本中可能存在的括弧备注，保持标题简洁 (可选)
+    let cleanText = str.replace(emojiMatch[0], '').trim();
+    return { emoji: emojiMatch[0], text: cleanText };
+}
+
+function getBadgeColor(item) {
+    if (['penalty', 'reminders'].includes(item.type)) return 'rgba(255, 59, 48, 0.2)'; // 红 (警示)
+    if (item.type === 'meals') return 'rgba(255, 159, 10, 0.2)'; // 橙 (生活)
+    if (item.required) return 'rgba(255, 214, 10, 0.2)'; // 黄 (必做)
+    if (item.score >= 20) return 'rgba(48, 209, 88, 0.2)'; // 绿 (大项)
+    return 'rgba(10, 132, 255, 0.2)'; // 蓝 (常规)
+}
+
 function renderActiveTab() {
     const container = document.getElementById('active-tab-view');
     const category = categories.find(c => c.id === state.activeTab);
@@ -293,7 +310,8 @@ function renderActiveTab() {
         return;
     }
 
-    let html = `<h2 style="font-size: 22px; margin-bottom: 16px; padding-left: 4px;">${category.name}</h2>`;
+    let html = `<h2 style="font-size: 22px; margin-bottom: 20px; padding-left: 4px; font-weight: 800; letter-spacing: -0.5px;">${category.name}</h2>`;
+
     if (state.activeTab === 'C') {
         html += renderCourseHub();
     }
@@ -301,26 +319,39 @@ function renderActiveTab() {
         html += renderSportHub();
     }
 
+    // 开启一体化面板容器
+    html += `<div class="ios-group">`;
+
     category.items.forEach(item => {
         if (item.id === 18 && state.activeTab === 'A') return; // 在 Hub 中渲染运动项
-        // 逻辑修正：蓝底仅用于倒扣分项（reminders, meals, penalty）
-        let typeClass = '';
-        if (['meals', 'reminders', 'penalty'].includes(item.type)) {
-            typeClass = 'is-deduction'; // 蓝底
-        } else if (item.required) {
-            typeClass = 'is-required';  // 橙底
-        }
+
+        const { emoji, text } = extractEmojiAndText(item.text);
+        const badgeColor = getBadgeColor(item);
+
         html += `
-            <div class="item-card ${typeClass}" id="item-${item.id}">
-                <div class="item-info">
-                    <span class="item-text">${item.required ? '• ' : ''}${item.text}</span>
-                    <span class="item-meta">${renderItemMeta(item)}</span>
-                    ${(item.type === 'subtasks' || item.type === 'bonus_subtasks') ? renderSubtasks(item) : ''}
+            <div class="ios-item-wrap" id="item-${item.id}">
+                <div class="ios-row">
+                    <div class="ios-row-left">
+                        <div class="ios-icon-badge" style="background: ${badgeColor}">${emoji}</div>
+                        <div class="ios-row-content">
+                            <span class="ios-row-title">${text}</span>
+                            <span class="ios-row-subtitle">${renderItemMeta(item)}</span>
+                        </div>
+                    </div>
+                    <div class="ios-row-right">
+                        ${renderControl(item)}
+                    </div>
                 </div>
-                <div class="item-action">${renderControl(item)}</div>
+                ${(item.type === 'subtasks' || item.type === 'bonus_subtasks') ? `
+                    <div class="subtask-wrapper" style="padding: 0 16px 16px 62px;">
+                        ${renderSubtasks(item)}
+                    </div>` : ''}
             </div>
         `;
     });
+
+    html += `</div>`; // 关闭一体化面板容器
+
     container.innerHTML = html;
     category.items.forEach(item => bindItemEvents(item));
 
