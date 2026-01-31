@@ -328,21 +328,20 @@ function renderActiveTab() {
 
 function renderCourseHub() {
     return `
-        <div class="course-hub" style="background: rgba(44, 44, 46, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 16px; padding: 4px 0; margin-bottom: 24px; border: 0.5px solid rgba(255,255,255,0.1);">
-            <div style="padding: 12px 16px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.08);">
+        <div class="course-hub" style="margin-bottom: 24px;">
+            <div style="padding: 0 4px 10px;">
                 <span style="font-size:12px; font-weight:700; color:var(--ios-gray); text-transform: uppercase; letter-spacing: 0.5px;">🎓 课外小课程</span>
             </div>
-            <div class="course-list">
-                ${COURSES.map((c, index) => {
+            <div class="course-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                ${COURSES.map(c => {
         const active = !!state.answers[c.id];
-        const isLast = index === COURSES.length - 1;
         return `
-                        <div class="course-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; ${isLast ? '' : 'border-bottom: 0.5px solid rgba(255,255,255,0.08);'}">
-                            <div style="display: flex; flex-direction: column;">
-                                <span style="font-size: 16px; font-weight: 600; color: ${active ? 'white' : 'white'}">${c.text}</span>
-                                <span style="font-size: 12px; color: ${active ? 'var(--ios-green)' : 'var(--ios-gray)'}; font-weight: 600;">+${c.score} PTS</span>
+                        <div class="course-card" style="background: rgba(44, 44, 46, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 16px; padding: 12px 10px; border: 0.5px solid ${active ? 'rgba(48, 209, 88, 0.3)' : 'rgba(255,255,255,0.1)'}; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; transition: all 0.3s ease;">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-size: 13px; font-weight: 700; color: white; white-space: nowrap;">${c.text}</span>
+                                <span style="font-size: 10px; color: ${active ? 'var(--ios-green)' : 'var(--ios-gray)'}; font-weight: 700;">+${c.score} PTS</span>
                             </div>
-                            <label class="toggle">
+                            <label class="toggle" style="transform: scale(0.85);">
                                 <input type="checkbox" class="course-toggle-input" data-id="${c.id}" ${active ? 'checked' : ''}>
                                 <span class="toggle-slider"></span>
                             </label>
