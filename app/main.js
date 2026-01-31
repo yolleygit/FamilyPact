@@ -297,8 +297,12 @@ function renderActiveTab() {
     if (state.activeTab === 'C') {
         html += renderCourseHub();
     }
+    if (state.activeTab === 'A') {
+        html += renderSportHub();
+    }
 
     category.items.forEach(item => {
+        if (item.id === 18 && state.activeTab === 'A') return; // 在 Hub 中渲染运动项
         // 逻辑修正：蓝底仅用于倒扣分项（reminders, meals, penalty）
         let typeClass = '';
         if (['meals', 'reminders', 'penalty'].includes(item.type)) {
@@ -320,10 +324,70 @@ function renderActiveTab() {
     container.innerHTML = html;
     category.items.forEach(item => bindItemEvents(item));
 
-    // 绑定课程盒事件
+    // 绑定 Hub 事件
     if (state.activeTab === 'C') {
         bindCourseHubEvents();
     }
+    if (state.activeTab === 'A') {
+        bindSportHubEvents();
+    }
+}
+
+function renderSportHub() {
+    const item = categories.find(c => c.id === 'A').items.find(i => i.id === 18);
+    const val = state.answers[item.id] || 0;
+    const colorClass = 'is-blue';
+    let dots = '';
+    for (let i = 1; i <= 5; i++) {
+        dots += `<div class="ios-dot ${i <= val ? 'active ' + colorClass : ''}" data-idx="${i}" style="width: 28px; height: 28px;"></div>`;
+    }
+
+    return `
+        <div class="sport-hub" style="background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(10, 132, 255, 0.05) 100%); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 20px; padding: 16px; margin-bottom: 24px; border: 0.5px solid rgba(10, 132, 255, 0.3); position: relative; overflow: hidden;">
+            <div style="position: absolute; top: -10px; right: -10px; font-size: 60px; opacity: 0.1; filter: grayscale(1);">🏃</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                    <span style="font-size:16px; font-weight:800; color:white;">运动小健将 🏃</span>
+                    <span style="font-size:12px; color:var(--ios-blue); font-weight:700;">坚持 30 分钟 / 组项</span>
+                </div>
+                <div style="background: rgba(10, 132, 255, 0.2); padding: 4px 10px; border-radius: 10px; font-size: 14px; font-weight: 800; color: var(--ios-blue);">
+                    +${val === 0 ? 20 : 20 + (val - 1) * 15} PTS
+                </div>
+            </div>
+            <div class="ios-dots" style="justify-content: space-between; padding: 0 4px;">
+                ${dots}
+            </div>
+            <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 11px; color: rgba(255,255,255,0.4); font-weight: 600;">起步奖励 20 分，进阶每组 15 分</span>
+                <span style="font-size: 11px; color: var(--ios-blue); font-weight: 700;">${val}/5 组</span>
+            </div>
+        </div>
+    `;
+}
+
+function bindSportHubEvents() {
+    const hub = document.querySelector('.sport-hub');
+    if (!hub) return;
+    const item = categories.find(c => c.id === 'A').items.find(i => i.id === 18);
+
+    hub.querySelectorAll('.ios-dot').forEach(dot => {
+        dot.onclick = async (e) => {
+            const idx = parseInt(e.target.dataset.idx);
+            const current = state.answers[item.id] || 0;
+
+            if (!checkEditPermission(item.id, 'set-dots', idx)) return;
+
+            if (state.currentUser.role === 'parent' && current === idx) {
+                state.answers[item.id] = idx - 1;
+            } else {
+                state.answers[item.id] = idx;
+            }
+
+            updateUI();
+            await syncData();
+            renderActiveTab();
+        };
+    });
 }
 
 function renderCourseHub() {
