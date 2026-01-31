@@ -11,13 +11,13 @@ export const categories = [
         items: [
             { id: 18, text: "运动小健将 (30分钟) 🏃", score: 20, type: "exercise", required: true },
             { id: 1, text: "早起小鸟 (8:30前) 🐣", score: 10, type: "check", required: false },
-            { id: 2, text: "吃饭快快星人 (🍱 25-30min)", score: 15, type: "meals", required: false },
+            { id: 2, text: "吃饭快快星人 (🍱 25min)", score: 15, type: "meals", required: false },
             { id: 3, text: "听力满分 (自觉开饭) 👂", score: 10, type: "reminders", required: false },
             { id: 4, text: "文明小标兵 (出口成章) 🤫", score: 10, type: "reminders", required: false },
             { id: 5, text: "小脚丫不着地 (穿拖鞋) 👟", score: 10, type: "reminders", required: false },
             { id: 6, text: "身体直挺挺 (坐姿标杆) 📏", score: 10, type: "reminders", required: false },
             { id: 19, text: "时间守门员 (拒绝拖延) ⏳", score: 10, type: "penalty", required: false },
-            { id: 20, text: "专心致志 (不要开小差) 🎯", score: 5, type: "penalty", required: false },
+            { id: 20, text: "专心致志 (勿搞名堂) 🎯", score: 5, type: "penalty", required: false },
         ]
     },
     {
