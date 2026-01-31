@@ -328,21 +328,24 @@ function renderActiveTab() {
 
 function renderCourseHub() {
     return `
-        <div class="course-hub" style="background: var(--ios-card); border-radius: 16px; padding: 12px; margin-bottom: 20px; border: 0.5px solid rgba(255,255,255,0.1);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 4px;">
-                <span style="font-size:13px; font-weight:700; color:var(--ios-gray);">📅 今日课程排课 (勾选即完成)</span>
+        <div class="course-hub" style="background: rgba(44, 44, 46, 0.4); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 16px; padding: 4px 0; margin-bottom: 24px; border: 0.5px solid rgba(255,255,255,0.1);">
+            <div style="padding: 12px 16px 8px; border-bottom: 0.5px solid rgba(255,255,255,0.08);">
+                <span style="font-size:12px; font-weight:700; color:var(--ios-gray); text-transform: uppercase; letter-spacing: 0.5px;">🎓 课外小课程</span>
             </div>
-            <div class="course-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                ${COURSES.map(c => {
+            <div class="course-list">
+                ${COURSES.map((c, index) => {
         const active = !!state.answers[c.id];
+        const isLast = index === COURSES.length - 1;
         return `
-                        <div class="course-item ${active ? 'active' : ''}" data-id="${c.id}" 
-                             style="background: ${active ? 'rgba(48, 209, 88, 0.15)' : '#2c2c2e'}; 
-                                    padding: 10px 4px; border-radius: 12px; text-align: center; 
-                                    border: 1px solid ${active ? 'rgba(48, 209, 88, 0.3)' : 'transparent'}; 
-                                    transition: all 0.2s;">
-                            <div style="font-size: 11px; font-weight: 700; margin-bottom: 4px; color: ${active ? 'var(--ios-green)' : 'white'}">${c.text}</div>
-                            <div style="font-size: 9px; color: ${active ? 'var(--ios-green)' : 'var(--ios-gray)'}; font-weight: 600;">+${c.score} PTS</div>
+                        <div class="course-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; ${isLast ? '' : 'border-bottom: 0.5px solid rgba(255,255,255,0.08);'}">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="font-size: 16px; font-weight: 600; color: ${active ? 'white' : 'white'}">${c.text}</span>
+                                <span style="font-size: 12px; color: ${active ? 'var(--ios-green)' : 'var(--ios-gray)'}; font-weight: 600;">+${c.score} PTS</span>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" class="course-toggle-input" data-id="${c.id}" ${active ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
                         </div>
                     `;
     }).join('')}
@@ -354,18 +357,20 @@ function renderCourseHub() {
 function bindCourseHubEvents() {
     const hub = document.querySelector('.course-hub');
     if (!hub) return;
-    hub.querySelectorAll('.course-item').forEach(item => {
-        item.onclick = async () => {
-            const cid = parseInt(item.dataset.id);
-            // 这里遵循“落子无悔”逻辑吗？用户说“家长/孩子勾选就代表完成”，且是一个开关模式。
-            // 为了灵活性（万一勾错了），家长可以反选，孩子由于是加分项，如果是单向逻辑则不能点掉。
-            // 考虑到这是“今日排课”，允许反选可能更人性化。但如果严格按系统逻辑，孩子点过后不能取消。
-            if (state.currentUser.role !== 'parent' && state.answers[cid]) {
+    hub.querySelectorAll('.course-toggle-input').forEach(input => {
+        input.onchange = async (e) => {
+            const cid = parseInt(input.dataset.id);
+            const isChecked = e.target.checked;
+
+            if (state.currentUser.role !== 'parent' && !isChecked) {
+                e.target.checked = true; // 复原
                 return showDialog("落子无悔", "课程已打卡完成，如需撤销请找爸爸妈妈。");
             }
-            state.answers[cid] = !state.answers[cid];
+
+            state.answers[cid] = isChecked;
             updateUI();
             await syncData();
+            // 重新渲染当前 Tab 以更新列表中的状态（如 PTS 颜色）
             renderActiveTab();
         };
     });
