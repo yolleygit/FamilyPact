@@ -48,3 +48,5 @@
     - 每次玩30分钟 $\rightarrow$ 必须物理休息10分钟（强制离开屏幕）
     - 超时/休息不彻底：取消当天剩余所有已解锁的额度
     - **超量运动奖励**：因超量运动获得的加分，可直接用于冲击下一档游戏时间或抵扣非必做项扣分。
+
+# 更新 cd app && npx wrangler pages deploy . --project-name family-pact --branch main
