@@ -327,14 +327,16 @@ function renderActiveTab() {
 
         const { emoji, text } = extractEmojiAndText(item.text);
         const badgeColor = getBadgeColor(item);
+        const requiredClass = item.required ? 'is-required' : '';
+        const requiredTag = item.required ? `<span class="required-tag">必做</span>` : '';
 
         html += `
             <div class="ios-item-wrap" id="item-${item.id}">
-                <div class="ios-row">
+                <div class="ios-row ${requiredClass}">
                     <div class="ios-row-left">
                         <div class="ios-icon-badge" style="background: ${badgeColor}">${emoji}</div>
                         <div class="ios-row-content">
-                            <span class="ios-row-title">${text}</span>
+                            <span class="ios-row-title">${text}${requiredTag}</span>
                             <span class="ios-row-subtitle">${renderItemMeta(item)}</span>
                         </div>
                     </div>

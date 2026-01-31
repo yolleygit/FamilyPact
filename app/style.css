@@ -509,6 +509,33 @@ input:checked+.toggle-slider:before {
     color: var(--ios-gray);
 }
 
+/* --- Required Item Decorators --- */
+.ios-row.is-required::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 15%;
+    bottom: 15%;
+    width: 3px;
+    background: var(--ios-orange);
+    border-radius: 0 4px 4px 0;
+}
+
+.required-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    background: rgba(255, 159, 10, 0.15);
+    color: var(--ios-orange);
+    border: 0.5px solid rgba(255, 159, 10, 0.3);
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    margin-left: 6px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .ios-row-right {
     display: flex;
     align-items: center;
