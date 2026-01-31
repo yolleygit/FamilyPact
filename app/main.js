@@ -380,7 +380,7 @@ function renderSportHub() {
             <div style="position: absolute; top: -10px; right: -10px; font-size: 60px; opacity: 0.1; filter: grayscale(1);">🏃</div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                 <div style="display:flex; flex-direction:column; gap:2px;">
-                    <span style="font-size:16px; font-weight:800; color:white;">运动小健将 🏃</span>
+                    <span style="font-size:16px; font-weight:800; color:white;">运动小健将 🏃 <span class="required-tag">必做</span></span>
                     <span style="font-size:12px; color:var(--ios-blue); font-weight:700;">坚持 30 分钟 / 组项</span>
                 </div>
                 <div style="background: rgba(10, 132, 255, 0.2); padding: 4px 10px; border-radius: 10px; font-size: 14px; font-weight: 800; color: var(--ios-blue);">
