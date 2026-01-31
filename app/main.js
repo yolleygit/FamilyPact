@@ -910,6 +910,9 @@ function calculateScore() {
                 const c = val || 0;
                 total -= (c === 1 ? 5 : c === 2 ? 10 : c > 2 ? 10 + (c - 2) * 5 : 0);
             }
+            if (item.type === 'penalty') {
+                total -= (val || 0) * item.score;
+            }
             if (item.type === 'check' || item.type === 'class') {
                 if (val) total += item.score;
                 if (item.required && !val) requiredDone = false;
