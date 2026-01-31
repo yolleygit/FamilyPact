@@ -462,11 +462,19 @@ input:checked+.toggle-slider:before {
     content: "";
     position: absolute;
     left: 0;
-    top: 15%;
-    bottom: 15%;
-    width: 4px;
-    background: var(--ios-blue);
-    border-radius: 0 4px 4px 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: var(--ios-red);
+    border-radius: 0;
+    box-shadow: 2px 0 10px rgba(255, 59, 48, 0.4);
+    z-index: 2;
+}
+
+/* 必做的 Sport Hub 增加红框 */
+.sport-hub {
+    border: 1.5px solid rgba(255, 59, 48, 0.4) !important;
+    background: linear-gradient(135deg, rgba(255, 59, 48, 0.1) 0%, rgba(10, 132, 255, 0.05) 100%) !important;
 }
 
 .ios-row {
@@ -533,30 +541,39 @@ input:checked+.toggle-slider:before {
 }
 
 /* --- Required Item Decorators --- */
+.ios-row.is-required {
+    background: rgba(255, 59, 48, 0.08);
+    /* 极淡的红色背景衬托 */
+}
+
 .ios-row.is-required::before {
     content: "";
     position: absolute;
     left: 0;
-    top: 15%;
-    bottom: 15%;
-    width: 3px;
-    background: var(--ios-orange);
-    border-radius: 0 4px 4px 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--ios-red);
+    /* 改为 iOS 红色 */
+    border-radius: 0;
+    box-shadow: 2px 0 8px rgba(255, 59, 48, 0.3);
 }
 
 .required-tag {
     display: inline-block;
     padding: 1px 6px;
-    background: rgba(255, 159, 10, 0.15);
-    color: var(--ios-orange);
-    border: 0.5px solid rgba(255, 159, 10, 0.3);
+    background: var(--ios-red);
+    /* 改为实色红底 */
+    color: white;
+    /* 白字高亮 */
     border-radius: 6px;
     font-size: 10px;
     font-weight: 800;
-    margin-left: 6px;
+    margin-left: 8px;
     vertical-align: middle;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    box-shadow: 0 2px 5px rgba(255, 59, 48, 0.3);
 }
 
 .ios-row-right {
