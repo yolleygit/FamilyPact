@@ -1,3 +1,9 @@
+export const COURSES = [
+    { id: 101, text: "新东方 🏫", score: 20 },
+    { id: 102, text: "口才 🗣️", score: 15 },
+    { id: 103, text: "练声 🎵", score: 15 }
+];
+
 export const categories = [
     {
         id: "A",
@@ -27,9 +33,8 @@ export const categories = [
         id: "C",
         name: "🧠 智慧大闯关",
         items: [
-            { id: 11, text: "超级挑战 (课外课程) 🚀", score: 20, type: "class", required: true },
-            { id: 12, text: "作业通关 (今日 2 页) 📝", score: 10, type: "check", required: true },
-            { id: 13, text: "脑力大风暴 (奥数) 🔢", score: 10, type: "check", required: true },
+            { id: 12, text: "作业通关 (每天 2 页) 📝", score: 10, type: "check", required: true },
+            { id: 13, text: "脑力大风暴 (奥数题) 🔢", score: 10, type: "check", required: true },
             { id: 14, text: "语文探险家 📖", score: 20, type: "check", required: false },
             { id: 15, text: "今天我最高光 (总结) 🌟", score: 10, type: "check", required: false },
             { id: 16, text: "书海小航员 ⛵", score: 10, type: "check", required: false },

@@ -1,4 +1,4 @@
-import { categories, RULES } from './data.js';
+import { categories, COURSES, RULES } from './data.js';
 
 let state = {
     familyId: null,
@@ -12,7 +12,6 @@ let state = {
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
     })(),
-    hasClass: true,
     activeTab: 'A',
     answers: {},
     usedSlots: 0,
@@ -171,12 +170,6 @@ async function enterApp() {
         state.selectedChildId = state.currentUser.id;
     }
 
-    // 1. 设置“有课日”开关权限：只有家长可以操作 (如果开关已在 DOM 中)
-    const classToggleInitial = document.getElementById('has-class-mode');
-    if (classToggleInitial) {
-        classToggleInitial.disabled = (state.currentUser.role !== 'parent');
-    }
-
     await loadDayData();
     updateBillboard(); // 更新右上角时间看板
     renderActiveTab();
@@ -228,11 +221,9 @@ async function loadDayData(isBackground = false) {
             // 检查星星是否增加了 (用于触发特效)
             const oldStars = state.stars || 0;
             state.answers = data.answers || {};
-            state.hasClass = data.hasClass;
             state.usedSlots = data.usedSlots || 0;
             state.stars = data.stars || 0;
             state.bonusReason = data.bonusReason || "";
-            document.getElementById('has-class-mode').checked = state.hasClass;
 
             // 只有孩子端且星星真的增加了才触发
             if (state.currentUser.role === 'child' && state.stars > oldStars) {
@@ -242,10 +233,13 @@ async function loadDayData(isBackground = false) {
             // 根据日期自动判定该日期的初始状态
             const d = new Date(state.selectedDate);
             const day = d.getDay(); // 0 是周日, 6 是周六
-            state.hasClass = (day !== 0 && day !== 6);
-            state.answers = state.hasClass ? { 11: true } : {};
+            const isWeekday = (day !== 0 && day !== 6);
+
+            // 初始逻辑：工作日默认包含 103 (练声)
+            state.answers = isWeekday ? { 103: false } : {};
             state.usedSlots = 0;
-            document.getElementById('has-class-mode').checked = state.hasClass;
+            state.stars = 0;
+            state.bonusReason = "";
         }
         updateUI();
     } catch (e) {
@@ -264,7 +258,6 @@ async function syncData() {
             date: state.selectedDate,
             answers: state.answers,
             score: total,
-            hasClass: state.hasClass,
             usedSlots: state.usedSlots,
             stars: state.stars,
             bonusReason: state.bonusReason
@@ -301,8 +294,11 @@ function renderActiveTab() {
     }
 
     let html = `<h2 style="font-size: 22px; margin-bottom: 16px; padding-left: 4px;">${category.name}</h2>`;
+    if (state.activeTab === 'C') {
+        html += renderCourseHub();
+    }
+
     category.items.forEach(item => {
-        if (item.id === 11) return; // 隐藏补习项
         // 逻辑修正：蓝底仅用于倒扣分项（reminders, meals, penalty）
         let typeClass = '';
         if (['meals', 'reminders', 'penalty'].includes(item.type)) {
@@ -323,6 +319,56 @@ function renderActiveTab() {
     });
     container.innerHTML = html;
     category.items.forEach(item => bindItemEvents(item));
+
+    // 绑定课程盒事件
+    if (state.activeTab === 'C') {
+        bindCourseHubEvents();
+    }
+}
+
+function renderCourseHub() {
+    return `
+        <div class="course-hub" style="background: var(--ios-card); border-radius: 16px; padding: 12px; margin-bottom: 20px; border: 0.5px solid rgba(255,255,255,0.1);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 4px;">
+                <span style="font-size:13px; font-weight:700; color:var(--ios-gray);">📅 今日课程排课 (勾选即完成)</span>
+            </div>
+            <div class="course-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                ${COURSES.map(c => {
+        const active = !!state.answers[c.id];
+        return `
+                        <div class="course-item ${active ? 'active' : ''}" data-id="${c.id}" 
+                             style="background: ${active ? 'rgba(48, 209, 88, 0.15)' : '#2c2c2e'}; 
+                                    padding: 10px 4px; border-radius: 12px; text-align: center; 
+                                    border: 1px solid ${active ? 'rgba(48, 209, 88, 0.3)' : 'transparent'}; 
+                                    transition: all 0.2s;">
+                            <div style="font-size: 11px; font-weight: 700; margin-bottom: 4px; color: ${active ? 'var(--ios-green)' : 'white'}">${c.text}</div>
+                            <div style="font-size: 9px; color: ${active ? 'var(--ios-green)' : 'var(--ios-gray)'}; font-weight: 600;">+${c.score} PTS</div>
+                        </div>
+                    `;
+    }).join('')}
+            </div>
+        </div>
+    `;
+}
+
+function bindCourseHubEvents() {
+    const hub = document.querySelector('.course-hub');
+    if (!hub) return;
+    hub.querySelectorAll('.course-item').forEach(item => {
+        item.onclick = async () => {
+            const cid = parseInt(item.dataset.id);
+            // 这里遵循“落子无悔”逻辑吗？用户说“家长/孩子勾选就代表完成”，且是一个开关模式。
+            // 为了灵活性（万一勾错了），家长可以反选，孩子由于是加分项，如果是单向逻辑则不能点掉。
+            // 考虑到这是“今日排课”，允许反选可能更人性化。但如果严格按系统逻辑，孩子点过后不能取消。
+            if (state.currentUser.role !== 'parent' && state.answers[cid]) {
+                return showDialog("落子无悔", "课程已打卡完成，如需撤销请找爸爸妈妈。");
+            }
+            state.answers[cid] = !state.answers[cid];
+            updateUI();
+            await syncData();
+            renderActiveTab();
+        };
+    });
 }
 
 function renderStatusTab(container) {
@@ -359,13 +405,6 @@ function renderStatusTab(container) {
             <button class="ios-setting-item" id="family-code-btn">
                 <span>家庭码: ${localStorage.getItem('family_pact_code') || '---'}</span>
             </button>
-            <div class="ios-setting-item">
-                <span>今天有课 (有课日)</span>
-                <label class="toggle">
-                    <input type="checkbox" id="has-class-mode" ${state.hasClass ? 'checked' : ''} ${state.currentUser.role !== 'parent' ? 'disabled' : ''}>
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
         </div>
 
         <div class="ios-settings-list" id="admin-tools" style="${state.currentUser.role === 'parent' ? '' : 'display:none'}">
@@ -384,22 +423,6 @@ function renderStatusTab(container) {
         </div>
     `;
     items.forEach(item => bindItemEvents(item));
-
-    // 绑定有课日开关逻辑
-    const classToggle = document.getElementById('has-class-mode');
-    if (classToggle) {
-        classToggle.onchange = (e) => {
-            if (state.currentUser.role !== 'parent') {
-                e.target.checked = state.hasClass;
-                return showDialog("权限受限", "只有爸爸妈妈可以修改有课日状态哦。");
-            }
-            state.hasClass = e.target.checked;
-            state.answers[11] = state.hasClass;
-            updateUI();
-            syncData();
-            showToast(state.hasClass ? "已切换至：有课模式 📚" : "已切换至：无课模式 🏖️");
-        };
-    }
 
     if (state.currentUser.role === 'parent') {
         document.getElementById('bonus-star-btn').onclick = () => {
@@ -427,12 +450,10 @@ function renderStatusTab(container) {
                 // 恢复机制：根据日期判定是否有课
                 const d = new Date(state.selectedDate);
                 const day = d.getDay();
-                state.hasClass = (day !== 0 && day !== 6);
+                const isWeekday = (day !== 0 && day !== 6);
 
-                // 核心：若有课，初始状态应包含补习项(11)已完成，否则为空
-                state.answers = state.hasClass ? { 11: true } : {};
-
-                document.getElementById('has-class-mode').checked = state.hasClass;
+                // 核心：学习 Tab 初始逻辑，工作日默认可选练声
+                state.answers = isWeekday ? { 103: false } : {};
 
                 updateUI();
                 await syncData();
@@ -790,7 +811,7 @@ function calculateScore() {
             }
             if (item.type === 'check' || item.type === 'class') {
                 if (val) total += item.score;
-                if (item.required && !val && !(item.id === 11 && !state.hasClass)) requiredDone = false;
+                if (item.required && !val) requiredDone = false;
             }
             if (item.type === 'subtasks' || item.type === 'bonus_subtasks') {
                 const count = (val || []).length;
@@ -805,11 +826,19 @@ function calculateScore() {
             if (item.type === 'dots') {
                 total += (val || 0) * item.score;
             }
-            if (item.type === 'penalty') {
-                total -= (val || 0) * item.score;
-            }
         });
     });
+
+    // 核心：计算新课程积分 (ID 101, 102, 103)
+    const COURSES = [
+        { id: 101, score: 20 },
+        { id: 102, score: 15 },
+        { id: 103, score: 15 }
+    ];
+    COURSES.forEach(c => {
+        if (state.answers[c.id]) total += c.score;
+    });
+
     total += (state.stars || 0) * 10;
     return { total, requiredDone };
 }
