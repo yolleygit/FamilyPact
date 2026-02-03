@@ -94,8 +94,22 @@ async function handleLogin() {
             method: 'POST',
             body: JSON.stringify({ familyCode: code })
         });
-        const data = await res.json();
-        if (data.error) return showDialog('登录失败', data.error);
+
+        if (!res.ok) {
+            const text = await res.text();
+            console.error('Login failed with status:', res.status, text);
+            return showDialog('登录失败', `服务器错误 (${res.status}): ${text.slice(0, 100) || '无响应内容'}`);
+        }
+
+        let data;
+        const resClone = res.clone();
+        try {
+            data = await res.json();
+        } catch (e) {
+            const raw = await resClone.text();
+            console.error('JSON parse error:', e, raw);
+            return showDialog('解析失败', `返回格式错误 (${res.status}): ${raw.slice(0, 50)}...`);
+        }
 
         state.familyId = data.familyId;
         state.users = data.users;
