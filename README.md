@@ -11,73 +11,49 @@ FamilyPact 旨在帮助家庭建立健康的日常习惯，通过可视化的积
   - **生活 (Living)**: 运动、早起、用餐习惯等。
   - **学习 (Learning)**: 作业、阅读、练琴等。
   - **劳动 (Labor)**: 家务分担、整理收纳。
-- **🏆 积分与惩罚**: 支持加分项、扣分项（如拖延、不专注）以及“必做项”检查。
-- **🔒 角色权限**:
-  - **孩子**: 查看任务、打卡（部分需要确认）、查看奖励。
-  - **家长**: PIN 码保护，拥有最高权限（复核、调整分数、配置任务）。
-- **☁️ 云端同步**: 基于 Cloudflare Pages + Workers (KV/D1) 实现多端实时数据同步。
-- **📊 数据可视化**: 周趋势图表，直观展示孩子的成长曲线。
+- **💬 家庭交流中心 (NEW)**:
+  - **公共公告**: 家长可发布全家可见的通知。
+  - **私密留言**: 孩子与父母之间的 1-on-1 悄悄话，支持隐私隔离（爸爸看不见孩子给妈妈的留言）。
+  - **管理权限**: 家长支持单条消息删除及一键清空。
+  - **智能时间**: 自动识别当天消息，带有时钟图标的温馨日期提示。
+- **🏆 积分与奖励系统**:
+  - **星星嘉奖**: 家长可为出色表现授予“嘉奖星星”，伴随 3D 卡片庆祝动效。
+  - **撤销机制**: 完善的撤销逻辑，支持当日星星回滚及当日记录全面重置（后悔药）。
+  - **时间券兑换**: 积分自动兑换平板使用时间券。
+- **🔒 权限与安全**: 基于 PIN 码的家长模式，支持身份快速切换。
+- **📊 趋势分析**: 周数据可视化图表，追踪成长点滴。
 
 ## 🛠️ 技术栈
 
-- **前端**: 原生 HTML5, CSS3 (Variables, Flexbox/Grid, Backdrop-filter), Vanilla JavaScript (ES6+)。
-- **后端/部署**: [Cloudflare Pages](https://pages.cloudflare.com/)。
-- **构建工具**: Wrangler (Cloudflare CLI).
-- **无依赖**: 零框架（No React/Vue），追求极致的轻量化和加载速度。
+- **前端**: 原生 HTML5, CSS3, Vanilla JavaScript (ES6+)。
+- **存储与 API**: Neon (Serverless Postgres) + Cloudflare Workers。
+- **部署**: [Cloudflare Pages](https://pages.cloudflare.com/)。
+- **架构**: 零框架依赖，毫秒级加载。
 
 ## 🚀 快速开始
 
-### 1. 环境准备
-
-确保你已安装 [Node.js](https://nodejs.org/) 和 [pnpm/npm](https://pnpm.io/)。
-
-```bash
-# 安装 Wrangler CLI
-npm install -g wrangler
-```
-
-### 2. 启动本地开发服务器
-
-```bash
-# 进入应用目录
-cd app
-
-# 启动开发服务 (默认端口 8788)
-npx wrangler pages dev .
-```
-
-访问 `http://localhost:8788` 即可看到应用。
-
-### 3. 部署到 Cloudflare Pages
-
-```bash
-# 登录 Cloudflare 账号
-npx wrangler login
-
-# 部署
-npx wrangler pages deploy . --project-name family-pact
-```
-
-## 📱 移动端体验
-
-本项目专为移动端（特别是 iPhone）优化：
-
-- 支持 `PWA`（可添加到主屏幕）。
-- 适配刘海屏和灵动岛区域。
-- 禁用双击缩放，提供原生 App 般的触控响应。
+1. **环境**: 安装 Node.js 和 Wrangler。
+2. **开发**: `npx wrangler pages dev .`
+3. **部署**: `npx wrangler pages deploy .`
 
 ## 📂 项目结构
 
 ```
 FamilyPact/
-├── app/
-│   ├── index.html      # 入口文件
-│   ├── style.css       # 全局样式与 iOS 设计系统
-│   ├── main.js         # 核心业务逻辑 (UI渲染 + 数据交互)
-│   ├── data.js         # 任务配置数据
-│   └── functions/      # Cloudflare Workers 后端函数
-└── README.md
+├── chat.js         # 交流中心核心逻辑
+├── main.js         # 仪表盘、任务与全局系统逻辑
+├── style.css       # iOS 设计系统 (含 2000+ 行精心雕琢的样式)
+├── data.js         # 任务与奖励配置
+├── functions/      # 后端 API (Messages, Logs, Sessions, Auth)
+└── index.html      # 页面入口
 ```
+
+## 📄 更新日志 (根据 Commits)
+
+- **v1.2.0**: 强化交流中心：新增单条删除、公告默认首选、隐私隔离、智能日期。
+- **v1.1.5**: 强化逻辑：新增嘉奖星星撤销功能及当日记录全面重置。
+- **v1.1.0**: 3D 庆祝系统：授予星星时弹出精致动效。
+- **v1.0.0**: iOS 设计风格重构完成，任务系统上线。
 
 ## 📄 许可证
 
