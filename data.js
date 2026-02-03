@@ -28,7 +28,7 @@ export const categories = [
             { id: 13, text: "脑力大风暴 (奥数题) 🔢", score: 10, type: "check", required: true },
             { id: 14, text: "语文探险家 📖", score: 20, type: "check", required: false },
             { id: 15, text: "今天我最高光 (总结) 🌟", score: 10, type: "check", required: false },
-            { id: 16, text: "书海小航员 ⛵", score: 10, type: "check", required: false },
+            { id: 16, text: "书海小航员(阅读) ⛵", score: 10, type: "check", required: false },
             { id: 17, text: "小小程序员 (AI 探索) 💻", score: 20, type: "check", required: false },
         ]
     },
