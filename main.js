@@ -1052,11 +1052,7 @@ function calculateScore() {
     });
 
     // 核心：计算新课程积分 (ID 101, 102, 103)
-    const COURSES = [
-        { id: 101, score: 20 },
-        { id: 102, score: 15 },
-        { id: 103, score: 15 }
-    ];
+    // 核心：计算新课程积分 (ID 101, 102, 103) - 使用 imported COURSES
     COURSES.forEach(c => {
         if (state.answers[c.id]) total += c.score;
     });
