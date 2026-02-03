@@ -45,9 +45,19 @@ const UI = {
 async function init() {
     loadLocalAuth();
     setupGlobalEvents();
+    setupGlobalInteractions();
     if (state.familyId && state.currentUser) {
         enterApp();
     }
+}
+
+// 监听任何用户交互以更新活跃时间
+function setupGlobalInteractions() {
+    state.lastInteraction = Date.now();
+    const updateTime = () => { state.lastInteraction = Date.now(); };
+    window.addEventListener('mousedown', updateTime, true);
+    window.addEventListener('touchstart', updateTime, true);
+    window.addEventListener('keypress', updateTime, true);
 }
 
 // --- Auth & Identity ---
@@ -177,10 +187,20 @@ async function enterApp() {
     // 触发登录汇报
     showLoginReport();
 
-    // 启动 5 秒一次的自动实时更新 (轮询)
+    // 启动 5 秒一次的自动实时更新 (轮询) 与 家长端超时检查
     setInterval(async () => {
-        // 如果 3 秒内有操作，跳过本次轮询以防冲突
-        if (Date.now() - state.lastInteraction < 3000) return;
+        const now = Date.now();
+
+        // 1. 家长端自动超时检查 (10 分钟)
+        if (state.currentUser && state.currentUser.role === 'parent') {
+            if (now - state.lastInteraction > 10 * 60 * 1000) {
+                handleAutoLogout();
+                return;
+            }
+        }
+
+        // 2. 原有的实时数据轮询：如果 3 秒内有操作，跳过本次轮询以防冲突
+        if (now - state.lastInteraction < 3000) return;
 
         const oldData = JSON.stringify(state.answers);
         await loadDayData(true); // 后台刷新
@@ -190,6 +210,27 @@ async function enterApp() {
             renderActiveTab();
         }
     }, 5000);
+}
+
+function handleAutoLogout() {
+    console.log("Parent session timed out, returning to identity selector.");
+    state.currentUser = null;
+
+    // 保存状态时移除当前用户，但保留家庭信息
+    localStorage.setItem('family_pact_auth', JSON.stringify({
+        familyId: state.familyId,
+        currentUser: null,
+        users: state.users
+    }));
+
+    // UI 切换回身份选择
+    UI.app.style.display = 'none';
+    UI.overlay.style.display = 'flex';
+    UI.loginForm.style.display = 'none';
+    UI.identitySelector.style.display = 'block';
+    renderUserChoices();
+
+    showDialog('安全提醒', '由于长时间未操作，管理员模式已自动退出。', null, false);
 }
 
 function renderChildSelector(children) {
