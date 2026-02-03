@@ -10,10 +10,17 @@ let selectedChildId = null; // 当前选中的孩子 ID，用于过滤消息
 export function initChat(state, handlers) {
     appState = state;
     uiHandlers = handlers;
-    // 默认选中第一个孩子
-    const children = state.users?.filter(u => u.role === 'child') || [];
-    if (children.length > 0) {
-        selectedChildId = children[0].id;
+
+    // 初始化逻辑：
+    // 家长端：默认进入“公告栏”模式 (selectedChildId = null)
+    if (state.currentUser.role === 'parent') {
+        selectedChildId = null;
+    } else {
+        // 孩子端：默认选中第一个家长（虽然孩子同时看两个板子，但私信需要一个默认接收人）
+        const parents = state.users?.filter(u => u.role === 'parent') || [];
+        if (parents.length > 0) {
+            selectedChildId = parents[0].id;
+        }
     }
 }
 
@@ -124,14 +131,21 @@ function renderCapsulePicker() {
 
     return `
         <div class="capsule-picker">
-            ${options.map((opt, idx) => `
-                <button class="capsule-btn ${idx === 0 ? 'active' : ''}" 
+            ${options.map((opt, idx) => {
+        // 判断逻辑：
+        // 如果是公告选项且 selectedChildId 是 null -> active
+        // 如果是私信选项且其 ID 等于 selectedChildId -> active
+        const isActive = (opt.type === 'notice' && selectedChildId === null) ||
+            (opt.type === 'feedback' && opt.id === selectedChildId);
+        return `
+                <button class="capsule-btn ${isActive ? 'active' : ''}" 
                         data-id="${opt.id}" 
                         data-type="${opt.type}">
                     <span class="emoji">${opt.icon}</span>
                     <span class="text">${opt.label}</span>
                 </button>
-            `).join('')}
+                `;
+    }).join('')}
         </div>
     `;
 }
@@ -245,9 +259,15 @@ function renderChatMessages() {
 }
 
 function renderMessageItem(msg) {
+    const isParent = appState.currentUser.role === 'parent';
     // 公告不区分"我发送的"，统一显示为左侧通告样式
     const isMe = msg.type !== 'notice' && msg.sender_id === appState.currentUser.id;
-    const time = new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    const date = new Date(msg.created_at);
+    const timeStr = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    const isToday = new Date().toDateString() === date.toDateString();
+    const dateStr = isToday ? '' : `${date.getMonth() + 1}/${date.getDate()} `;
+    const cuteTime = `${dateStr}${timeStr} 🕒`;
 
     // 构建发送者/接收者标签
     let infoTag = '';
@@ -258,19 +278,41 @@ function renderMessageItem(msg) {
         } else if (!isMe) {
             infoTag = `<span class="sender-tag">${msg.sender_avatar} ${msg.sender_name}</span>`;
         }
+    } else if (msg.type === 'notice') {
+        // 公告：标注发布者
+        infoTag = `<span class="sender-tag">📢 ${msg.sender_name}</span>`;
     }
 
     return `
-        <div class="message-item apple-msg ${isMe ? 'is-me' : ''}">
+        <div class="message-item apple-msg ${isMe ? 'is-me' : ''}" data-msg-id="${msg.id}">
             ${!isMe ? `<div class="message-avatar sm">${msg.sender_avatar}</div>` : ''}
             <div class="message-body">
-                <div class="message-bubble">${msg.content}</div>
-                <div class="message-info">${infoTag} ${time}</div>
+                <div class="message-bubble">${msg.content}
+                    ${isParent ? `<button class="delete-msg-inner-btn" onclick="event.stopPropagation(); deleteSingleMessage('${msg.id}')">✕</button>` : ''}
+                </div>
+                <div class="message-info">${infoTag} ${cuteTime}</div>
             </div>
             ${isMe ? `<div class="message-avatar sm">${msg.sender_avatar}</div>` : ''}
         </div>
     `;
 }
+
+// 删除单条消息
+window.deleteSingleMessage = async (msgId) => {
+    if (!confirm('确定要删除这条消息吗？')) return;
+    try {
+        const res = await fetch(`/api/messages?familyId=${appState.familyId}&messageId=${msgId}`, {
+            method: 'DELETE'
+        });
+        if (res.ok) {
+            await fetchMessages();
+        } else {
+            uiHandlers.showDialog('删除失败', '请稍后重试');
+        }
+    } catch (e) {
+        uiHandlers.showDialog('删除失败', '服务器忙');
+    }
+};
 
 async function sendMessage() {
     const input = document.getElementById('chat-input');

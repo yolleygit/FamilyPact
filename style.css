@@ -1884,8 +1884,54 @@ input:checked+.toggle-slider:before {
 }
 
 .message-item.apple-msg .message-info {
-    display: none;
-    /* 极简模式不显示时间，点击显示？暂时隐藏 */
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 4px;
+    padding: 0 4px;
+}
+
+.message-item.apple-msg.is-me .message-info {
+    justify-content: flex-end;
+}
+
+/* 单条删除按钮样式 */
+.message-bubble {
+    position: relative;
+}
+
+.delete-msg-inner-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #FF3B30;
+    color: white;
+    border: 2px solid #1C1C1E;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.message-item:hover .delete-msg-inner-btn {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1.1);
+}
+
+.message-item.is-me .delete-msg-inner-btn {
+    right: auto;
+    left: -8px;
 }
 
 /* 底部输入与胶囊 (Composer) */

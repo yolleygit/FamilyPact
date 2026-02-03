@@ -350,9 +350,22 @@ function renderActiveTab() {
     const container = document.getElementById('active-tab-view');
     const category = categories.find(c => c.id === state.activeTab);
 
-    // 仪表盘在所有页面都可见
+    // --- 全局 UI 状态重置 (防止 Tab 切换导致状态丢失) ---
+    const isParent = state.currentUser?.role === 'parent';
+    const tabContent = document.querySelector('.tab-content');
     const dashboard = document.querySelector('.floating-dashboard');
+
+    // 1. 默认恢复顶部孩子选择器（仅家长可见）
+    if (UI.childCarousel) {
+        UI.childCarousel.style.display = isParent ? 'flex' : 'none';
+    }
+
+    // 2. 默认移除交流模式的满屏 class
+    if (tabContent) tabContent.classList.remove('chat-mode-active');
+
+    // 3. 默认恢复仪表盘显示
     if (dashboard) dashboard.style.display = 'block';
+
     updateUI();
 
     // 奖券详情格 (.slots-container) 仅在状态页 'D' 显示
@@ -374,24 +387,19 @@ function renderActiveTab() {
     }
 
     if (state.activeTab === 'F') {
-        dashboard.style.display = 'none'; // 交流页面不显示仪表盘
+        if (dashboard) dashboard.style.display = 'none'; // 交流页面不显示仪表盘
         // 交流模式强制满屏锁定
-        document.querySelector('.tab-content')?.classList.add('chat-mode-active');
+        if (tabContent) tabContent.classList.add('chat-mode-active');
 
-        // 交流tab隐藏顶部孩子选择器（底部有胶囊选择器）
+        // 交流tab隐藏顶部卡片（因为底部有胶囊切换）
         if (UI.childCarousel) UI.childCarousel.style.display = 'none';
+
         renderChatTab(container);
         bindChatEvents();
         return;
     }
 
-    // 其他tab恢复
-    document.querySelector('.tab-content')?.classList.remove('chat-mode-active');
-
-    // 其他tab恢复顶部孩子选择器（仅家长可见）
-    if (UI.childCarousel && state.currentUser?.role === 'parent') {
-        UI.childCarousel.style.display = 'flex';
-    }
+    // (此处原代码已移至顶部统一处理)
 
     let html = `<h2 style="font-size: 22px; margin-bottom: 20px; padding-left: 4px; font-weight: 800; letter-spacing: -0.5px;">${category.name}</h2>`;
 
@@ -596,6 +604,12 @@ function renderStatusTab(container) {
                 <span>✨ 授予特别嘉奖 (星星)</span>
                 <span class="arrow">${state.stars > 0 ? `已发 ${state.stars} 颗 ` : ''}嘉奖 〉</span>
             </button>
+            ${state.stars > 0 ? `
+            <button class="ios-setting-item destructive" id="undo-star-btn">
+                <span>撤销：扣回今日嘉奖星星</span>
+                <span class="arrow">↺</span>
+            </button>
+            ` : ''}
             <button class="ios-setting-item destructive" id="reset-day-btn">
                 <span>清理：当日积分重置</span>
                 <span class="arrow">⚠️</span>
@@ -626,9 +640,26 @@ function renderStatusTab(container) {
 
                 updateUI();
                 await syncData();
+                renderActiveTab(); // 刷新以更新状态展示
                 showToast("星星已授予！✨");
             };
         };
+
+        const undoBtn = document.getElementById('undo-star-btn');
+        if (undoBtn) {
+            undoBtn.onclick = () => {
+                showDialog('撤销嘉奖', `确定要撤销今日最后一颗嘉奖星星吗？\n(当前已发: ${state.stars} 颗)`, async () => {
+                    const oldStars = state.stars;
+                    state.stars = Math.max(0, state.stars - 1);
+                    if (state.stars === 0) state.bonusReason = "";
+
+                    updateUI();
+                    await syncData();
+                    renderActiveTab();
+                    showToast("嘉奖已成功撤销 ↺");
+                }, true, true);
+            };
+        }
         document.getElementById('reset-day-btn').onclick = () => {
             showDialog('重置记录', `确定要将今日记录恢复到初始状态吗？`, async () => {
                 // 恢复机制：根据日期判定是否有课
@@ -636,8 +667,12 @@ function renderStatusTab(container) {
                 const day = d.getDay();
                 const isWeekday = (day !== 0 && day !== 6);
 
-                // 核心：学习 Tab 初始逻辑，工作日默认可选练声
+                // 核心：重置所有当日状态
                 state.answers = isWeekday ? { 103: false } : {};
+                state.stars = 0;
+                state.bonusReason = "";
+                state.hasClass = false;
+                state.usedSlots = 0;
 
                 updateUI();
                 await syncData();
