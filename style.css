@@ -1474,3 +1474,761 @@ input:checked+.toggle-slider:before {
     margin-top: 15px !important;
     box-shadow: 0 4px 15px rgba(255, 204, 0, 0.1) !important;
 }
+/* --- Communication Tab styles --- */
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 20px);
+    gap: 15px;
+    padding-top: 5px;
+}
+
+.messages-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.message-item {
+    display: flex;
+    gap: 10px;
+    max-width: 90%;
+}
+
+.message-item.is-me {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ios-card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.message-bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* 家长通知样式: 蓝色系，左对齐 */
+.message-type-notice .message-bubble {
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.2) 0%, rgba(10, 132, 255, 0.1) 100%);
+    border: 0.5px solid rgba(10, 132, 255, 0.3);
+    color: white;
+    border-bottom-left-radius: 4px;
+}
+
+/* 孩子反馈样式: 灰色/绿色系，左对齐 */
+.message-type-feedback .message-bubble {
+    background: rgba(44, 44, 46, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    border-bottom-left-radius: 4px;
+}
+
+.message-info {
+    font-size: 11px;
+    color: var(--ios-gray);
+    margin-top: 4px;
+    margin-left: 2px;
+}
+
+.message-item.is-me .message-info {
+    text-align: right;
+    margin-left: 0;
+    margin-right: 2px;
+}
+
+.chat-input-area {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 0;
+    background: var(--ios-bg);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.chat-input {
+    flex: 1;
+    background: var(--ios-card);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 10px 15px;
+    color: white;
+    font-size: 15px;
+    outline: none;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.chat-send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--ios-blue);
+    border: none;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.chat-send-btn:active {
+    transform: scale(0.9);
+}
+
+.chat-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ios-gray);
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* --- Refactored Communication Tab (V2) --- */
+.chat-view {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px); /* 减去 Tab bar 和 padding */
+    gap: 20px;
+    padding: 10px;
+}
+
+.notice-section, .message-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(44, 44, 46, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.notice-section {
+    max-height: 200px; /* 公告区紧凑点 */
+}
+
+.section-header {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-header h3 {
+    font-size: 15px;
+    font-weight: 800;
+    margin: 0;
+    flex: 1;
+}
+
+.section-header .badge {
+    font-size: 10px;
+    background: rgba(10, 132, 255, 0.2);
+    color: var(--ios-blue);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: 700;
+}
+
+.chat-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message-item.mini {
+    max-width: 95%;
+}
+
+.message-avatar.sm {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+}
+
+.chat-input-area.v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    background: var(--ios-card);
+    border-radius: 20px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+}
+
+.input-row {
+    display: flex;
+    gap: 10px;
+}
+
+.recipient-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recipient-picker .label {
+    font-size: 12px;
+    color: var(--ios-gray);
+    font-weight: 600;
+}
+
+.picker-options {
+    display: flex;
+    gap: 6px;
+}
+
+.picker-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.picker-btn.active {
+    background: var(--ios-blue);
+    box-shadow: 0 0 10px rgba(10, 132, 255, 0.4);
+}
+
+/* --- V3 Redesign: Apple Style Chat --- */
+
+/* 布局调整 */
+.chat-view.apple-style {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    gap: 16px;
+    padding: 12px;
+    background: transparent;
+}
+
+.chat-section {
+    background: rgba(44, 44, 46, 0.6);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-radius: 20px;
+    border: 0.5px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1; /* 均分空间 */
+}
+
+/* 顶部公告区可以稍微矮一点 */
+.chat-section.notice-board {
+    flex: 0 0 auto;
+    height: 35%; 
+}
+
+.chat-section.dm-board {
+    flex: 1; 
+}
+
+/* 标题栏简化 */
+.section-title {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ios-gray);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.section-title .icon {
+    font-size: 16px;
+}
+
+.section-title .badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 3px 8px;
+    background: rgba(10, 132, 255, 0.15);
+    color: var(--ios-blue);
+    border-radius: 10px;
+}
+
+/* 消息流区域 */
+.message-stream {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* iOS 风格消息气泡 */
+.message-item.apple-msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    margin-bottom: 4px;
+}
+
+.message-item.apple-msg.is-me {
+    flex-direction: row-reverse;
+}
+
+.message-item.apple-msg .message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.message-item.apple-msg .message-bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.4;
+    max-width: 240px;
+    word-wrap: break-word;
+}
+
+/* 对方的消息：深灰色 */
+.message-item.apple-msg .message-bubble {
+    background: #3A3A3C;
+    color: white;
+    border-bottom-left-radius: 4px;
+}
+
+/* 我的消息：iOS 蓝 */
+.message-item.apple-msg.is-me .message-bubble {
+    background: var(--ios-blue);
+    color: white;
+    border-bottom-left-radius: 18px;
+    border-bottom-right-radius: 4px;
+}
+
+.message-item.apple-msg .message-info {
+    display: none; /* 极简模式不显示时间，点击显示？暂时隐藏 */
+}
+
+/* 底部输入与胶囊 (Composer) */
+.chat-composer {
+    background: rgba(28, 28, 30, 0.95); /* 接近黑色的深灰 */
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 12px;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 胶囊选择器 */
+.capsule-picker {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px; /* 防止滚动条贴边 */
+}
+
+.capsule-btn {
+    background: #2C2C2E;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.capsule-btn .text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #98989D;
+}
+
+.capsule-btn .emoji {
+    font-size: 16px;
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
+/* 选中态：高亮黑底蓝框 或 iOS 蓝底 */
+.capsule-btn.active {
+    background: #000000;
+    box-shadow: 0 0 0 1.5px var(--ios-blue); /* 模拟边框 */
+}
+
+.capsule-btn.active .text {
+    color: var(--ios-blue);
+}
+
+.capsule-btn.active .emoji {
+    filter: none;
+    opacity: 1;
+}
+
+/* 输入条 */
+.input-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#chat-input {
+    flex: 1;
+    background: #1C1C1E; /* 更深一点 */
+    border: 1px solid #3A3A3C;
+    border-radius: 20px;
+    padding: 10px 14px;
+    color: white;
+    font-size: 16px;
+    outline: none;
+    resize: none;
+    min-height: 40px;
+    max-height: 100px;
+}
+
+#chat-input:focus {
+    border-color: var(--ios-blue);
+}
+
+#chat-send-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--ios-blue);
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+#chat-send-btn:active {
+    transform: scale(0.92);
+}
+
+/* --- V4 Redesign: Warm & Official Notice --- */
+
+/* 覆盖之前可能存在的 .section-title，专门针对 Notice */
+.notice-header {
+    background: linear-gradient(90deg, #FF9500 0%, #FF5E3A 100%); /* 暖色橙红渐变 */
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    box-shadow: 0 2px 10px rgba(255, 94, 58, 0.3);
+}
+
+.notice-icon {
+    font-size: 18px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.notice-title {
+    font-size: 16px; 
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.notice-badge {
+    margin-left: auto;
+    font-size: 10px;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    backdrop-filter: blur(5px);
+}
+
+.notice-stream {
+    background: linear-gradient(180deg, rgba(255, 149, 0, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* 优化公告区的信息气泡，使其看起来更像“通告”而非对话 */
+.notice-stream .message-item.apple-msg .message-bubble {
+    background: rgba(255, 255, 255, 0.1); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 3px solid #FF9500; /* 左侧橙色竖条 */
+    border-radius: 8px; /* 方正一点 */
+    color: #E0E0E0;
+    width: 100%;
+    max-width: 100%;
+}
+
+.notice-stream .message-item.apple-msg {
+    align-items: flex-start; /* 顶对齐 */
+}
+
+/* 隐藏公告区的头像，让内容更纯粹？或者保留作为发布者标识 */
+.notice-stream .message-avatar {
+    margin-top: 4px;
+}
+
+/* 调整整体背景色，从纯黑变为极其深邃的暖空色，增加温馨感 */
+/* 注意：这会影响整个 tab，如果不希望影响其他 tab，需要把 .chat-view 的背景色设死，而不是透明 */
+.chat-view.apple-style {
+    background: radial-gradient(circle at center top, #1c1c1e 0%, #000000 100%);
+}
+
+/* 针对输入框 placeholder 的颜色调整，适配新的深色背景 */
+#chat-input::placeholder {
+    color: rgba(235, 235, 245, 0.3);
+}
+
+
+/* --- V4.1 Fix: Ensure Notice Visibility and Styling --- */
+
+/* 强制公告流中的消息不反转，保持左对齐 */
+.notice-stream .message-item.apple-msg.is-me {
+    flex-direction: row !important; /* 强制覆盖 row-reverse */
+}
+
+/* 确保公告气泡使用的是我们定义的通告样式，而不是蓝底白字 */
+.notice-stream .message-item.apple-msg .message-bubble {
+    background: rgba(255, 255, 255, 0.1) !important; 
+    color: #E0E0E0 !important;
+    border-radius: 8px !important;
+    border-bottom-left-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    border-left: 3px solid #FF9500 !important;
+}
+
+/* 调整公告区头像位置，使其看起来更整齐 */
+.notice-stream .message-avatar {
+    margin-right: 10px;
+    margin-left: 0 !important;
+    background: transparent !important; /* 头像背景透明，更干净 */
+}
+
+/* --- V5: Child Group & Clear Button --- */
+
+/* 清空按钮 */
+.clear-btn {
+    background: rgba(255, 59, 48, 0.15);
+    color: #FF453A;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: all 0.2s;
+}
+
+.clear-btn:hover {
+    background: rgba(255, 59, 48, 0.3);
+}
+
+/* 孩子分组 */
+.child-group {
+    margin-bottom: 20px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.child-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: linear-gradient(90deg, rgba(10, 132, 255, 0.1) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.child-group-header .child-avatar {
+    font-size: 24px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.child-group-header .child-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+}
+
+.child-group-header .msg-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--ios-blue);
+    background: rgba(10, 132, 255, 0.15);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.child-messages {
+    padding: 10px;
+}
+
+/* 孩子分组内的消息气泡调整 */
+.child-messages .message-item.apple-msg {
+    margin-bottom: 8px;
+}
+
+.child-messages .message-item.apple-msg .message-avatar {
+    display: none; /* 分组内不重复显示头像 */
+}
+
+/* 让分组内的气泡更紧凑 */
+.child-messages .message-item.apple-msg .message-bubble {
+    max-width: 100%;
+    border-radius: 12px;
+}
+
+
+/* --- V6: Simplified Single Stream UI --- */
+
+/* 发送者标签 */
+.sender-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(10, 132, 255, 0.15);
+    color: #64D2FF;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 4px;
+}
+
+/* 接收者标签 (家长发给孩子) */
+.recipient-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(48, 209, 88, 0.15);
+    color: #30D158;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-right: 4px;
+}
+
+/* 确保消息列表可滚动 */
+.message-stream {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* 移除之前的分组样式（保持CSS干净） */
+.child-group,
+.child-group-header,
+.child-messages {
+    display: contents; /* 失效但不报错 */
+}
+
+/* --- V8: Compact message area --- */
+
+/* 消息区域高度限制，约5-7条可见 */
+.message-stream {
+    max-height: 280px;
+    min-height: 200px;
+}
+
+.notice-stream {
+    max-height: 150px;
+    min-height: 80px;
+}
+
+/* 消息气泡更紧凑 */
+.message-item.apple-msg {
+    margin-bottom: 6px;
+}
+
+.message-item.apple-msg .message-bubble {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.message-item.apple-msg .message-info {
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* section-title 也加清空按钮支持 */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title .clear-btn {
+    margin-left: auto;
+}
+
+/* --- V8 Fix: Remove min-height causing blank area --- */
+.message-stream {
+    min-height: unset !important;
+    max-height: 45vh;
+}
+
+.notice-stream {
+    min-height: unset !important;
+    max-height: 20vh;
+}
+
+/* 让 chat-section 自适应内容 */
+.chat-section {
+    flex-shrink: 0;
+}
+
+.dm-board {
+    flex: 0 0 auto;
+}
+
+/* --- V8.2: Shorter message card --- */
+.message-stream {
+    max-height: 260px !important;
+}
+
+.dm-board {
+    max-height: 320px;
+}
+
+/* --- V8.3: Adjust to 360px --- */
+.message-stream {
+    max-height: 360px !important;
+}

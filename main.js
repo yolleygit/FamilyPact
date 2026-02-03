@@ -1,4 +1,5 @@
 import { categories, COURSES, RULES } from './data.js';
+import { initChat, renderChatTab, fetchMessages, bindChatEvents } from './chat.js';
 
 let state = {
     familyId: null,
@@ -19,6 +20,7 @@ let state = {
     bonusReason: "", // 新增：嘉奖寄语
     users: [],
     weeklyData: [],
+    messages: [], // 新增：保存交流消息
     lastInteraction: 0
 };
 
@@ -46,6 +48,7 @@ async function init() {
     loadLocalAuth();
     setupGlobalEvents();
     setupGlobalInteractions();
+    initChat(state, { showDialog, showToast });
     if (state.familyId && state.currentUser) {
         enterApp();
     }
@@ -223,6 +226,11 @@ async function enterApp() {
         if (oldData !== JSON.stringify(state.answers)) {
             renderActiveTab();
         }
+
+        // 3. 轮询新消息
+        if (state.activeTab === 'F') {
+            await fetchMessages(true);
+        }
     }, 5000);
 }
 
@@ -363,6 +371,20 @@ function renderActiveTab() {
     if (state.activeTab === 'D') {
         renderStatusTab(container);
         return;
+    }
+
+    if (state.activeTab === 'F') {
+        dashboard.style.display = 'none'; // 交流页面不显示仪表盘
+        // 交流tab隐藏顶部孩子选择器（底部有胶囊选择器）
+        if (UI.childCarousel) UI.childCarousel.style.display = 'none';
+        renderChatTab(container);
+        bindChatEvents();
+        return;
+    }
+
+    // 其他tab恢复顶部孩子选择器（仅家长可见）
+    if (UI.childCarousel && state.currentUser?.role === 'parent') {
+        UI.childCarousel.style.display = 'flex';
     }
 
     let html = `<h2 style="font-size: 22px; margin-bottom: 20px; padding-left: 4px; font-weight: 800; letter-spacing: -0.5px;">${category.name}</h2>`;
@@ -1445,4 +1467,5 @@ function createStarBlast() {
     }
     animate();
 }
+
 
