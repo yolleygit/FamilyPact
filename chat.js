@@ -39,6 +39,15 @@ export function renderChatTab(container) {
     const carousel = document.getElementById('child-carousel');
     if (carousel) carousel.style.display = 'none';
 
+    // 2. 留言/私信 (Private Messages)
+    const isParent = appState.currentUser.role === 'parent';
+
+    // 孩子端进入时，默认选中第一个家长，实现“无感”但“隔离”
+    if (!isParent && !selectedChildId) {
+        const firstParent = appState.users.find(u => u.role === 'parent');
+        if (firstParent) selectedChildId = firstParent.id;
+    }
+
     container.innerHTML = `
         <div class="chat-view apple-style">
             
@@ -161,6 +170,8 @@ function bindPickerEvents() {
 }
 
 function renderChatMessages() {
+    const noticeBoard = document.querySelector('.notice-board');
+    const dmBoard = document.querySelector('.dm-board');
     const noticeList = document.getElementById('notice-list');
     const messageList = document.getElementById('message-list');
     if (!noticeList || !messageList) return;
@@ -168,38 +179,55 @@ function renderChatMessages() {
     const notices = appState.messages.filter(m => m.type === 'notice');
     let feedbacks = appState.messages.filter(m => m.type === 'feedback');
 
-    // 如果选中了某个孩子，只显示与该孩子相关的对话
-    if (selectedChildId && appState.currentUser.role === 'parent') {
+    // 重点：无论是家长还是孩子，只要选中了对象，就只显示与该对象的私聊
+    if (selectedChildId) {
         feedbacks = feedbacks.filter(m =>
             m.sender_id === selectedChildId || m.recipient_id === selectedChildId
         );
     }
 
-    // 通知栏（始终显示）
-    noticeList.innerHTML = notices.length === 0
-        ? '<div class="chat-empty">暂无家庭公告</div>'
-        : notices.map(renderMessageItem).join('');
+    // 根据角色和模式切换显示
+    const isParent = appState.currentUser.role === 'parent';
+    const isNoticeMode = (selectedChildId === null && isParent);
 
-    // 私信区：根据模式显示不同内容
-    // 如果是公告模式（selectedChildId === null），显示历史公告
-    // 如果是私信模式，显示与选中孩子的对话
-    if (selectedChildId === null) {
-        // 公告模式：显示历史公告
-        messageList.innerHTML = notices.length === 0
-            ? '<div class="chat-empty">暂无历史公告</div>'
-            : notices.map(renderMessageItem).join('');
+    if (isParent) {
+        if (isNoticeMode) {
+            // 家长公告模式：只显示公告区，隐藏私信区
+            if (noticeBoard) noticeBoard.style.display = 'flex';
+            if (dmBoard) dmBoard.style.display = 'none';
+
+            noticeList.innerHTML = notices.length === 0
+                ? '<div class="chat-empty">暂无家庭公告</div>'
+                : notices.map(renderMessageItem).join('');
+        } else {
+            // 家长私信模式：只显示私信区，隐藏公告区
+            if (noticeBoard) noticeBoard.style.display = 'none';
+            if (dmBoard) dmBoard.style.display = 'flex';
+
+            const selectedChild = appState.users.find(u => u.id === selectedChildId);
+            const emptyMsg = selectedChild
+                ? `<div class="chat-empty">暂无与 ${selectedChild.name} 的对话</div>`
+                : '<div class="chat-empty">暂无私密留言</div>';
+
+            messageList.innerHTML = feedbacks.length === 0
+                ? emptyMsg
+                : feedbacks.map(renderMessageItem).join('');
+        }
     } else {
-        const selectedChild = appState.users.find(u => u.id === selectedChildId);
-        const emptyMsg = selectedChild
-            ? `<div class="chat-empty">暂无与 ${selectedChild.name} 的对话</div>`
-            : '<div class="chat-empty">暂无私密留言</div>';
+        // 孩子端：同时显示公告区和私信区
+        if (noticeBoard) noticeBoard.style.display = 'flex';
+        if (dmBoard) dmBoard.style.display = 'flex';
+
+        noticeList.innerHTML = notices.length === 0
+            ? '<div class="chat-empty">暂无家庭公告</div>'
+            : notices.map(renderMessageItem).join('');
 
         messageList.innerHTML = feedbacks.length === 0
-            ? emptyMsg
+            ? '<div class="chat-empty">暂无私密留言</div>'
             : feedbacks.map(renderMessageItem).join('');
     }
 
-    // 自动滚动到最新消息（底部）
+    // 自动滚动到最新消息
     requestAnimationFrame(() => {
         noticeList.scrollTop = noticeList.scrollHeight;
         messageList.scrollTop = messageList.scrollHeight;
@@ -327,29 +355,37 @@ async function clearAllFeedbacks() {
         if (!confirm(`确定要清空与 ${childName} 的所有对话吗？此操作不可撤销。`)) return;
 
         try {
-            const res = await fetch(`/api/messages?familyId=${appState.familyId}&type=feedback&childId=${selectedChildId}`, {
+            const res = await fetch(`/api/messages?familyId=${appState.familyId}&type=feedback&childId=${selectedChildId}&userId=${appState.currentUser.id}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
                 await fetchMessages();
             } else {
-                uiHandlers.showDialog('清空失败', '请稍后重试');
+                const data = await res.json();
+                uiHandlers.showDialog('清空失败', data.error || '请稍后重试');
             }
         } catch (e) {
             uiHandlers.showDialog('清空失败', '服务器忙');
         }
     } else {
-        // 孩子：清空自己发送的所有私信
-        if (!confirm('确定要清空你的所有悄悄话吗？此操作不可撤销。')) return;
+        // 孩子：清空与当前选中家长的所有私信
+        if (!selectedChildId) {
+            uiHandlers.showDialog('提示', '请先选择一位家长');
+            return;
+        }
+        const parent = appState.users.find(u => u.id === selectedChildId);
+        const parentName = parent?.name || '家长';
+        if (!confirm(`确定要清空与 ${parentName} 的所有悄悄话吗？此操作不可撤销。`)) return;
 
         try {
-            const res = await fetch(`/api/messages?familyId=${appState.familyId}&type=feedback&childId=${appState.currentUser.id}`, {
+            const res = await fetch(`/api/messages?familyId=${appState.familyId}&type=feedback&childId=${selectedChildId}&userId=${appState.currentUser.id}`, {
                 method: 'DELETE'
             });
             if (res.ok) {
                 await fetchMessages();
             } else {
-                uiHandlers.showDialog('清空失败', '请稍后重试');
+                const data = await res.json();
+                uiHandlers.showDialog('清空失败', data.error || '请稍后重试');
             }
         } catch (e) {
             uiHandlers.showDialog('清空失败', '服务器忙');

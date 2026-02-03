@@ -81,11 +81,20 @@ export async function onRequestDelete({ request, env }) {
             // 删除单条消息
             await sql`DELETE FROM messages WHERE id = ${messageId} AND family_id = ${familyId}`;
         } else if (type && childId) {
-            // 删除与指定孩子相关的 feedback 消息
+            // 私信清空：必须指定 userId (当前操作者)，确保只删除与操作者相关的对话
+            const userId = url.searchParams.get('userId');
+            if (!userId) {
+                return new Response(JSON.stringify({ error: 'User ID required for clearing private messages' }), { status: 400 });
+            }
+
+            // 只有 (我发给孩子 OR 孩子发给我) 的消息才会被删除
             await sql`DELETE FROM messages 
                       WHERE family_id = ${familyId} 
                       AND type = ${type}
-                      AND (sender_id = ${childId} OR recipient_id = ${childId})`;
+                      AND (
+                          (sender_id = ${userId} AND recipient_id = ${childId})
+                          OR (sender_id = ${childId} AND recipient_id = ${userId})
+                      )`;
         } else if (type) {
             // 批量删除某类型（所有）
             await sql`DELETE FROM messages WHERE family_id = ${familyId} AND type = ${type}`;

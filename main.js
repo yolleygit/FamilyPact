@@ -375,12 +375,18 @@ function renderActiveTab() {
 
     if (state.activeTab === 'F') {
         dashboard.style.display = 'none'; // 交流页面不显示仪表盘
+        // 交流模式强制满屏锁定
+        document.querySelector('.tab-content')?.classList.add('chat-mode-active');
+
         // 交流tab隐藏顶部孩子选择器（底部有胶囊选择器）
         if (UI.childCarousel) UI.childCarousel.style.display = 'none';
         renderChatTab(container);
         bindChatEvents();
         return;
     }
+
+    // 其他tab恢复
+    document.querySelector('.tab-content')?.classList.remove('chat-mode-active');
 
     // 其他tab恢复顶部孩子选择器（仅家长可见）
     if (UI.childCarousel && state.currentUser?.role === 'parent') {
