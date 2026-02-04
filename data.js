@@ -1,5 +1,5 @@
 export const COURSES = [
-    { id: 101, text: "新东方 🏫", score: 30 },
+    { id: 101, text: "新东方 🏫", score: 40 },
     { id: 102, text: "口才 🗣️", score: 15 },
     { id: 103, text: "练声 🎵", score: 15 }
 ];
