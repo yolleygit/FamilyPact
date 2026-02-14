@@ -797,8 +797,9 @@ async function renderWeeklyTab(container) {
                 <div style="height: 60px; display: flex; align-items: flex-end; gap: 2px;">
                     ${monthLogs.slice(-14).map(l => {
                         const h = Math.max(4, (l.totalScore / maxScore) * 50);
-                        return `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
-                            <div style="width:100%; height:${h}px; background:${l.totalScore >= 140 ? 'var(--ios-green)' : 'rgba(10,132,255,0.3)'}; border-radius: 2px;"></div>
+                        const isHit = l.totalScore >= 140;
+                        return `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;" title="${l.date}: ${l.totalScore}分 ${isHit ? '✅' : '❌'}">
+                            <div style="width:100%; height:${h}px; background:${isHit ? 'var(--ios-green)' : 'var(--ios-red)'}; border-radius: 2px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scaleY(1.2)'" onmouseout="this.style.transform='scaleY(1)'" transform-origin="bottom"></div>
                         </div>`;
                     }).join('')}
                 </div>
@@ -815,10 +816,12 @@ async function renderWeeklyTab(container) {
                 ${weekLogs.map(l => {
             const height = Math.max(10, (l.totalScore / maxScore) * 80);
             const isToday = l.date === today.toISOString().split('T')[0];
+            const isHit = l.totalScore >= 140;
+            const barColor = isToday ? 'var(--ios-blue)' : (isHit ? 'var(--ios-green)' : 'var(--ios-red)');
             return `
-                        <div class="chart-bar-group" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1;">
+                        <div class="chart-bar-group" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1;" title="${l.date}: ${l.totalScore}分 ${isHit ? '✅达标' : '❌未达标'}">
                             <div class="chart-num" style="font-size: 9px; color: var(--ios-gray);">${l.totalScore}</div>
-                            <div class="chart-bar" style="width: 10px; height: ${height}px; background: ${isToday ? 'var(--ios-blue)' : 'rgba(10, 132, 255, 0.3)'}; border-radius: 4px;"></div>
+                            <div class="chart-bar" style="width: 10px; height: ${height}px; background: ${barColor}; border-radius: 4px; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'"></div>
                             <div class="chart-label" style="font-size: 9px; color: var(--ios-gray);">${l.date.split('-')[2]}日</div>
                         </div>
                     `;
