@@ -20,7 +20,10 @@ let state = {
     bonusReason: "", // 新增：嘉奖寄语
     users: [],
     weeklyData: [],
+    weeklyData: [],
     messages: [], // 新增：保存交流消息
+    yesterdayAnswers: {}, // 新增：昨日答题记录 (用于浮动分)
+    yesterdayTotalScore: 0, // 新增：昨日总分 (用于判断是否达标)
     lastInteraction: 0
 };
 
@@ -277,8 +280,23 @@ function renderChildSelector(children) {
 // --- Data Fetching ---
 async function loadDayData(isBackground = false) {
     try {
-        const res = await fetch(`/api/logs?userId=${state.selectedChildId}&date=${state.selectedDate}`);
-        const { data } = await res.json();
+        // 1. 计算昨日日期
+        const d = new Date(state.selectedDate);
+        d.setDate(d.getDate() - 1);
+        const yesterdayStr = d.toISOString().split('T')[0];
+
+        // 2. 并行请求：今日数据 + 昨日数据
+        const [todayRes, yesterdayRes] = await Promise.all([
+            fetch(`/api/logs?userId=${state.selectedChildId}&date=${state.selectedDate}`),
+            fetch(`/api/logs?userId=${state.selectedChildId}&date=${yesterdayStr}`) // 获取昨日数据用于对比
+        ]);
+
+        const { data } = await todayRes.json();
+        const { data: yData } = await yesterdayRes.json();
+
+        // 3. 存储昨日状态 (用于计算浮动分)
+        state.yesterdayAnswers = (yData && yData.answers) ? yData.answers : {};
+        state.yesterdayTotalScore = yData ? (yData.totalScore || 0) : 0; // 新增：昨日总分
 
         if (data) {
             // 检查星星是否增加了 (用于触发特效)
@@ -294,8 +312,8 @@ async function loadDayData(isBackground = false) {
             }
         } else if (!isBackground) {
             // 根据日期自动判定该日期的初始状态
-            const d = new Date(state.selectedDate);
-            const day = d.getDay(); // 0 是周日, 6 是周六
+            const dDate = new Date(state.selectedDate);
+            const day = dDate.getDay(); // 0 是周日, 6 是周六
             const isWeekday = (day !== 0 && day !== 6);
 
             // 初始逻辑：工作日默认包含 103 (练声)
@@ -405,6 +423,21 @@ function renderActiveTab() {
 
     if (state.activeTab === 'C') {
         html += renderCourseHub();
+        // Special Header for Tab C
+        const catC = categories.find(c => c.id === 'C');
+        const minReq = catC.minRequired || 3;
+        const doneCount = catC.items.filter(i => state.answers[i.id]).length;
+        const hasAoshu = !!state.answers[13];
+        const hasReading = !!state.answers[14];
+        const isDone = doneCount >= minReq && hasAoshu && hasReading;
+        html += `
+            <div style="padding: 4px 16px 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13px; color: var(--ios-gray); font-weight: 600;">任选 ${minReq} 项 (必含奥数🔢+阅读📖)</span>
+                <span style="font-size: 13px; font-weight: 700; color: ${isDone ? 'var(--ios-green)' : 'var(--ios-orange)'}">
+                    ${isDone ? '✅ 已达标' : `进度 ${doneCount}/${minReq}`}
+                </span>
+            </div>
+        `;
     }
     if (state.activeTab === 'A') {
         html += renderSportHub();
@@ -713,50 +746,94 @@ async function renderWeeklyTab(container) {
     const startStr = start.toISOString().split('T')[0];
     const endStr = today.toISOString().split('T')[0];
 
+    // 月数据
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthStartStr = monthStart.toISOString().split('T')[0];
+
     try {
-        const res = await fetch(`/api/week?userId=${state.selectedChildId}&start=${startStr}&end=${endStr}`);
-        const { logs } = await res.json();
+        const [weekRes, monthRes] = await Promise.all([
+            fetch(`/api/week?userId=${state.selectedChildId}&start=${startStr}&end=${endStr}`),
+            fetch(`/api/week?userId=${state.selectedChildId}&start=${monthStartStr}&end=${endStr}`)
+        ]);
+
+        const { logs: weekLogs } = await weekRes.json();
+        const { logs: monthLogs } = await monthRes.json();
 
         const maxScore = 220;
-        let avg = 0;
-        if (logs.length > 0) {
-            avg = Math.round(logs.reduce((acc, curr) => acc + curr.totalScore, 0) / logs.length);
+        let weekAvg = 0, monthAvg = 0, monthDays = 0, monthHit = 0;
+        if (weekLogs.length > 0) {
+            weekAvg = Math.round(weekLogs.reduce((acc, curr) => acc + curr.totalScore, 0) / weekLogs.length);
+        }
+        if (monthLogs.length > 0) {
+            monthAvg = Math.round(monthLogs.reduce((acc, curr) => acc + curr.totalScore, 0) / monthLogs.length);
+            monthDays = monthLogs.length;
+            monthHit = monthLogs.filter(l => l.totalScore >= 140).length;
         }
 
         container.innerHTML = `
-            <h2 style="font-size: 22px; margin-bottom: 20px;">周趋势分析</h2>
-            
-            <div class="weekly-summary" style="background: var(--ios-card); padding: 20px; border-radius: 20px; margin-bottom: 24px; text-align: center;">
-                <p style="color: var(--ios-gray); font-size: 14px;">本周平均分</p>
-                <h3 style="font-size: 36px; margin: 8px 0; color: var(--ios-blue);">${avg} <span style="font-size: 14px; color: var(--ios-gray);">PTS</span></h3>
-                <p style="font-size: 12px; color: var(--ios-green);">较上周提升 12%</p>
+            <h2 style="font-size: 22px; margin-bottom: 20px;">📊 趋势分析</h2>
+
+            <!-- 简洁月视图 -->
+            <div style="background: var(--ios-card); padding: 16px; border-radius: 16px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-weight: 700; font-size: 15px;">本月 (${today.getMonth()+1}月)</span>
+                    <span style="font-size: 12px; color: var(--ios-gray);">${monthDays}天</span>
+                </div>
+                <div style="display: flex; gap: 16px; margin-bottom: 12px;">
+                    <div style="flex:1; text-align:center;">
+                        <div style="font-size: 20px; font-weight: 800; color: var(--ios-blue);">${monthAvg}</div>
+                        <div style="font-size: 11px; color: var(--ios-gray);">日均</div>
+                    </div>
+                    <div style="flex:1; text-align:center;">
+                        <div style="font-size: 20px; font-weight: 800; color: var(--ios-green);">${monthHit}</div>
+                        <div style="font-size: 11px; color: var(--ios-gray);">达标天</div>
+                    </div>
+                    <div style="flex:1; text-align:center;">
+                        <div style="font-size: 20px; font-weight: 800; color: var(--ios-orange);">${monthDays > 0 ? Math.round(monthHit/monthDays*100) : 0}%</div>
+                        <div style="font-size: 11px; color: var(--ios-gray);">达标率</div>
+                    </div>
+                </div>
+                <!-- 月柱状图 -->
+                <div style="height: 60px; display: flex; align-items: flex-end; gap: 2px;">
+                    ${monthLogs.slice(-14).map(l => {
+                        const h = Math.max(4, (l.totalScore / maxScore) * 50);
+                        return `<div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+                            <div style="width:100%; height:${h}px; background:${l.totalScore >= 140 ? 'var(--ios-green)' : 'rgba(10,132,255,0.3)'}; border-radius: 2px;"></div>
+                        </div>`;
+                    }).join('')}
+                </div>
             </div>
 
-            <div class="chart-container" style="background: var(--ios-card); padding: 20px; border-radius: 20px; height: 180px; display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px;">
-                ${logs.map(l => {
-            const height = Math.max(10, (l.totalScore / maxScore) * 100);
+            <!-- 周视图 -->
+            <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--ios-gray);">本周 (近7天)</h3>
+            <div class="weekly-summary" style="background: var(--ios-card); padding: 16px; border-radius: 16px; margin-bottom: 16px; text-align: center;">
+                <p style="color: var(--ios-gray); font-size: 12px;">周平均分</p>
+                <h3 style="font-size: 28px; margin: 4px 0; color: var(--ios-blue);">${weekAvg} <span style="font-size: 12px; color: var(--ios-gray);">PTS</span></h3>
+            </div>
+
+            <div class="chart-container" style="background: var(--ios-card); padding: 16px; border-radius: 16px; height: 140px; display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 20px;">
+                ${weekLogs.map(l => {
+            const height = Math.max(10, (l.totalScore / maxScore) * 80);
             const isToday = l.date === today.toISOString().split('T')[0];
             return `
-                        <div class="chart-bar-group" style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1;">
-                            <div class="chart-num" style="font-size: 10px; color: var(--ios-gray);">${l.totalScore}</div>
-                            <div class="chart-bar" style="width: 12px; height: ${height}px; background: ${isToday ? 'var(--ios-blue)' : 'rgba(10, 132, 255, 0.3)'}; border-radius: 6px; position: relative;">
-                                ${l.totalScore >= 140 ? '<div style="position:absolute; top:-4px; right:-4px; width:6px; height:6px; background:var(--ios-green); border-radius:50%;"></div>' : ''}
-                            </div>
-                            <div class="chart-label" style="font-size: 10px; color: var(--ios-gray);">${l.date.split('-')[2]}日</div>
+                        <div class="chart-bar-group" style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1;">
+                            <div class="chart-num" style="font-size: 9px; color: var(--ios-gray);">${l.totalScore}</div>
+                            <div class="chart-bar" style="width: 10px; height: ${height}px; background: ${isToday ? 'var(--ios-blue)' : 'rgba(10, 132, 255, 0.3)'}; border-radius: 4px;"></div>
+                            <div class="chart-label" style="font-size: 9px; color: var(--ios-gray);">${l.date.split('-')[2]}日</div>
                         </div>
                     `;
         }).join('')}
             </div>
 
-            <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--ios-gray);">每日得分明细</h3>
+            <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--ios-gray);">每日明细</h3>
             <div class="logs-list">
-                ${logs.reverse().map(l => `
-                    <div class="log-row" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--ios-card); border-radius: 14px; margin-bottom: 8px;">
+                ${weekLogs.reverse().map(l => `
+                    <div class="log-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--ios-card); border-radius: 12px; margin-bottom: 6px;">
                         <div>
-                            <span style="font-weight: 700;">${l.date}</span>
-                            <span style="font-size: 12px; color: var(--ios-gray); margin-left: 8px;">${l.totalScore >= 140 ? '✅ 达标' : '❌ 未达标'}</span>
+                            <span style="font-weight: 600; font-size: 13px;">${l.date}</span>
+                            <span style="font-size: 11px; color: var(--ios-gray); margin-left: 6px;">${l.totalScore >= 140 ? '✅' : '❌'}</span>
                         </div>
-                        <div style="font-weight: 800; color: ${l.totalScore >= 140 ? 'var(--ios-green)' : 'var(--ios-red)'}">${l.totalScore} PTS</div>
+                        <div style="font-weight: 700; font-size: 14px; color: ${l.totalScore >= 140 ? 'var(--ios-green)' : 'var(--ios-red)'}">${l.totalScore}</div>
                     </div>
                 `).join('')}
             </div>
@@ -821,8 +898,23 @@ function renderItemMeta(item) {
     }
 
     // 3. 通用加分类 (Positive Tasks)
+    // 3. 通用加分类 (Positive Tasks)
     if (item.type === 'check' || item.type === 'class') {
-        return val ? `<span style="color:var(--ios-green)">已加分：+${item.score}</span>` : `完成后：+${item.score} 分`;
+        let displayScore = item.score;
+        let bonusText = "";
+
+        // 浮动分展示逻辑：昨日达标(>=140)且昨日未做，今日做可获1.5倍
+        const isCatC = [12, 13, 14, 15, 16, 17, 21].includes(item.id);
+        if (isCatC && state.yesterdayTotalScore >= 140 && !state.yesterdayAnswers[item.id]) {
+            displayScore = Math.ceil(item.score * 1.5);
+            bonusText = ` <span style="color:var(--ios-orange); font-size:10px;">🔥+50%</span>`;
+        }
+
+        if (val) {
+            return `<span style="color:var(--ios-green)">已加分：+${displayScore}</span>${bonusText}`;
+        } else {
+            return `完成后：+${displayScore} 分${bonusText}`;
+        }
     }
     if (item.type === 'subtasks' || item.type === 'bonus_subtasks') {
         const count = (val || []).length;
@@ -1032,7 +1124,14 @@ function calculateScore() {
                 total -= (val || 0) * item.score;
             }
             if (item.type === 'check' || item.type === 'class') {
-                if (val) total += item.score;
+                let currentScore = item.score;
+                // 浮动分计算逻辑：昨日达标(>=140)且昨日该项目没做，今日做可获1.5倍
+                const isCatC = [12, 13, 14, 15, 16, 17, 21].includes(item.id);
+                if (isCatC && state.yesterdayTotalScore >= 140 && !state.yesterdayAnswers[item.id]) {
+                    currentScore = Math.ceil(item.score * 1.5);
+                }
+
+                if (val) total += currentScore;
                 if (item.required && !val) requiredDone = false;
             }
             if (item.type === 'subtasks' || item.type === 'bonus_subtasks') {
@@ -1058,6 +1157,19 @@ function calculateScore() {
     });
 
     total += (state.stars || 0) * 10;
+
+    // Special Rule: Category C requires *ANY N* items, 必须包含阅读(id=14)和奥数(id=13)
+    const catC = categories.find(c => c.id === 'C');
+    if (catC && catC.minRequired) {
+        const cCount = catC.items.filter(i => state.answers[i.id]).length;
+        // 必须完成minRequired项，且必须包含奥数(13)和阅读(14)
+        const hasAoshu = !!state.answers[13];
+        const hasReading = !!state.answers[14];
+        if (cCount < catC.minRequired || !hasAoshu || !hasReading) {
+            requiredDone = false;
+        }
+    }
+
     return { total, requiredDone };
 }
 
